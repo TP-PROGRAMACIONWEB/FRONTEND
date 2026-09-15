@@ -14,7 +14,7 @@ El código de la aplicación está ubicado en `offix-frontend/`.
 - **Ubicación:** `offix-frontend/`.
 - **Responsabilidades:** Renderizar una interfaz responsiva, realizar las validaciones aprobadas del lado del cliente, comunicarse con el backend mediante HTTP, subir archivos a través del flujo aprobado y administrado por el backend, y mostrar imágenes aprobadas desde la CDN de Cloudflare.
 - **Renderizado:** Utiliza App Router de Next.js y prioriza Server Components. Se puede utilizar SSR cuando mejore el rendimiento y la navegación. Los Client Components quedan reservados para APIs del navegador, estado interactivo, efectos y manejadores de eventos.
-- **Estado actual:** El repositorio contiene la estructura inicial de App Router. Los flujos del producto, la integración con la API, los componentes de shadcn/ui, las notificaciones de Sonner y la tipografía Raleway todavía no están implementados.
+- **Estado actual:** El repositorio contiene la estructura inicial de App Router. shadcn/ui está inicializado con Base UI y contiene el componente `Button`. Los flujos del producto, la integración con la API, las notificaciones de Sonner y la tipografía Raleway todavía no están implementados.
 
 ### Capa de backend
 
@@ -59,12 +59,18 @@ FRONTEND/
 ├── README.md
 ├── requirements.txt
 └── offix-frontend/
+    ├── components.json
     ├── public/
     ├── src/
-    │   └── app/
-    │       ├── globals.css
-    │       ├── layout.tsx
-    │       └── page.tsx
+    │   ├── app/
+    │   │   ├── globals.css
+    │   │   ├── layout.tsx
+    │   │   └── page.tsx
+    │   ├── components/
+    │   │   └── ui/
+    │   │       └── button.tsx
+    │   └── lib/
+    │       └── utils.ts
     ├── next.config.ts
     ├── package.json
     └── pnpm-lock.yaml
@@ -92,22 +98,22 @@ Los valores de marca deben exponerse como variables semánticas de CSS o del tem
 - **Headers y títulos:** Montserrat, peso `800`.
 - **Cuerpo, párrafos y footers:** Raleway, peso `400`.
 - **Estrategia de carga:** `next/font/google`; no deben utilizarse imports de hojas de estilo remotas ni archivos `.ttf` o `.otf` innecesarios.
-- **Estado actual:** `RootLayout` carga Montserrat como fuente variable. Raleway y la asignación aprobada de pesos para títulos y cuerpo todavía no están implementadas.
+- **Estado actual:** `RootLayout` declara Montserrat y Geist, pero actualmente aplica Geist mediante `--font-sans`. Raleway y la asignación aprobada de Montserrat `800` para títulos y Raleway `400` para cuerpo todavía no están implementadas.
 
 ### Tema
 
-No existe una paleta aprobada para el modo oscuro. El bloque temporal de `prefers-color-scheme` que se encuentra en `globals.css` no debe considerarse un tema aprobado del producto.
+No existe una paleta aprobada para el modo oscuro. La inicialización de shadcn/ui agregó variables neutrales y una clase `.dark`; esos valores predeterminados todavía no representan la paleta aprobada de OFFIX y no deben considerarse el tema final del producto.
 
 ## Catálogo de componentes propios
 
 ### `RootLayout`
 
 - **Ubicación:** `offix-frontend/src/app/layout.tsx`.
-- **Objetivo:** Define la estructura HTML raíz requerida por App Router, los metadatos globales, la importación del CSS global, el idioma del documento y la variable global de Montserrat.
+- **Objetivo:** Define la estructura HTML raíz requerida por App Router, los metadatos globales, la importación del CSS global, el idioma del documento y las fuentes globales.
 - **Entorno de renderizado:** Server Component.
 - **Interfaz:** Recibe la propiedad requerida `children: React.ReactNode` desde Next.js.
-- **Comportamiento actual:** Renderiza `<html lang="es">` y el cuerpo de la aplicación. Los metadatos todavía contienen textos genéricos provisorios.
-- **Dependencias:** `next`, `next/font/google`, tipos de React y `globals.css`.
+- **Comportamiento actual:** Renderiza `<html lang="es">` y el cuerpo de la aplicación. Aplica Geist como `font-sans`; Montserrat está declarada pero no aplicada. Los metadatos todavía contienen textos genéricos provisorios.
+- **Dependencias:** `next`, `next/font/google`, tipos de React, `@/lib/utils` y `globals.css`.
 - **Cómo personalizarlo:**
   - Modificá los metadatos globales en el objeto exportado `metadata` una vez que los textos del producto estén aprobados.
   - Configurá las fuentes globales aprobadas en las declaraciones de `next/font/google`.
@@ -131,9 +137,17 @@ No existe una paleta aprobada para el modo oscuro. El bloque temporal de `prefer
 
 ## Registro de componentes de shadcn/ui
 
-Actualmente no se importó ningún componente de shadcn/ui al repositorio.
+### `Button`
 
-Cuando se agregue uno, documentalo con esta estructura:
+- **Ruta local:** `offix-frontend/src/components/ui/button.tsx`.
+- **Objetivo dentro de OFFIX:** Proveer el componente base para acciones. Todavía no está utilizado por una pantalla funcional.
+- **Base:** Primitiva `Button` de `@base-ui/react`.
+- **Variantes disponibles:** `default`, `outline`, `secondary`, `ghost`, `destructive` y `link`.
+- **Tamaños disponibles:** `default`, `xs`, `sm`, `lg`, `icon`, `icon-xs`, `icon-sm` e `icon-lg`.
+- **Personalización:** Modificá las variantes y tamaños en `buttonVariants`. Los colores provienen de las variables semánticas definidas en `globals.css`; antes de usarlo en producto, esas variables deben alinearse con la paleta aprobada de OFFIX.
+- **Documentación oficial:** [Button de shadcn/ui](https://ui.shadcn.com/docs/components/button).
+
+Cuando se agregue otro componente, documentalo con esta estructura:
 
 ```markdown
 ### Nombre del componente
@@ -144,7 +158,7 @@ Cuando se agregue uno, documentalo con esta estructura:
 - **Documentación oficial:** Incluí el enlace exacto del componente en https://ui.shadcn.com/docs/components.
 ```
 
-Sonner está aprobado para notificaciones tipo toast, pero todavía no está instalado ni configurado.
+Sonner está aprobado para notificaciones tipo toast, pero todavía no está agregado ni configurado.
 
 ## Plantilla para documentar componentes propios
 
@@ -173,8 +187,8 @@ Usá esta estructura para cada componente nuevo:
 | Confirmación de subidas a Cloudflare | Backend | Protocolo sin definir |
 | Contacto mediante WhatsApp | Enlace del frontend con datos aprobados del perfil | Sin implementar |
 | Notificaciones por correo electrónico | Backend o servicio externo | Disparadores y plantillas sin definir |
-| shadcn/ui | Frontend | Sin instalar ni configurar |
-| Sonner | Frontend | Sin instalar ni configurar |
+| shadcn/ui | Frontend | Inicializado con Base UI; `Button` agregado localmente |
+| Sonner | Frontend | Sin agregar ni configurar |
 
 ## Requisitos pendientes de definición
 
