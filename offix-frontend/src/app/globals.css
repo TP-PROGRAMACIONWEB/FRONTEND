@@ -1,0 +1,31 @@
+@import "tailwindcss";
+
+:root {
+  --background: #babcca;
+  --foreground: #171717;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-montserrat);
+}
+
+@media (prefers-color-scheme: dark) { /*hay q ver si implementamos lo del dark mode, no le cambié los colores tdv*/
+  :root {
+    --background: #babcca;
+    --foreground: #171717;
+  }
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-montserrat), sans-serif;
+}
+
+.montserrat-semibold {
+  font-family: var(--font-montserrat), sans-serif;
+  font-weight: 600;
+  font-style: normal;
+}

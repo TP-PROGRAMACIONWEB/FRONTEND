@@ -1,0 +1,11 @@
+# OFFIX frontend dependency notice
+#
+# This repository currently has no Python runtime dependencies.
+# Node.js dependencies must not be listed in requirements.txt.
+# The authoritative manifests are:
+#   offix-frontend/package.json
+#   offix-frontend/pnpm-lock.yaml
+#
+# Install the locked frontend dependencies with:
+#   cd offix-frontend
+#   pnpm install --frozen-lockfile
