@@ -168,9 +168,9 @@ Las fuentes de verdad para las dependencias son `offix-frontend/package.json` y 
 
 ## Configurar las variables de entorno
 
-Actualmente, la aplicación no tiene variables de entorno definidas.
+Actualmente, la aplicación utiliza variables de entorno (por ejemplo, `NEXT_PUBLIC_API_URL` para la integración con el backend).
 
-Cuando se incorpore configuración:
+Para gestionar la configuración:
 
 1. Los nombres de las variables requeridas deberán agregarse a un archivo `.env.example` versionado, con valores vacíos o ejemplos seguros.
 2. Los valores locales deberán guardarse en `offix-frontend/.env.local`.
@@ -223,7 +223,7 @@ Antes de comenzar las pruebas funcionales:
 4. Levantá el servidor correspondiente.
 5. Confirmá que la terminal muestre la URL local esperada y que no existan errores de compilación.
 
-Actualmente, la ruta principal no contiene una interfaz visible del producto. Los flujos funcionales, la integración con el backend, los componentes de shadcn/ui, las notificaciones de Sonner y el sistema tipográfico completo todavía no están implementados.
+Actualmente, la ruta principal no contiene una interfaz visible del producto. Sin embargo, ya se ha configurado la integración inicial con el backend para los flujos de autenticación, la tipografía (Montserrat) y las notificaciones con Sonner. El resto de los flujos funcionales continúan en desarrollo.
 
 ## Resolución de problemas
 

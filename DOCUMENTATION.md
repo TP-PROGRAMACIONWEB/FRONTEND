@@ -14,7 +14,7 @@ El código de la aplicación está ubicado en `offix-frontend/`.
 - **Ubicación:** `offix-frontend/`.
 - **Responsabilidades:** Renderizar una interfaz responsiva, realizar las validaciones aprobadas del lado del cliente, comunicarse con el backend mediante HTTP, subir archivos a través del flujo aprobado y administrado por el backend, y mostrar imágenes aprobadas desde la CDN de Cloudflare.
 - **Renderizado:** Utiliza App Router de Next.js y prioriza Server Components. Se puede utilizar SSR cuando mejore el rendimiento y la navegación. Los Client Components quedan reservados para APIs del navegador, estado interactivo, efectos y manejadores de eventos.
-- **Estado actual:** El repositorio contiene la estructura inicial de App Router. shadcn/ui está inicializado con Base UI y contiene el componente `Button`. Los flujos del producto, la integración con la API, las notificaciones de Sonner y la tipografía Raleway todavía no están implementados.
+- **Estado actual:** El repositorio contiene la estructura inicial de App Router. shadcn/ui está inicializado con Base UI y contiene el componente `Button`. Se han configurado la integración inicial con la API (autenticación), las notificaciones globales mediante Sonner y la tipografía Montserrat. Los demás flujos funcionales del producto continúan en desarrollo.
 
 ### Capa de backend
 
@@ -127,13 +127,38 @@ No existe una paleta aprobada para el modo oscuro. La inicialización de shadcn/
 - **Objetivo:** Define el punto de entrada de la ruta `/`.
 - **Entorno de renderizado:** Server Component.
 - **Interfaz:** No recibe propiedades.
-- **Comportamiento actual:** No renderiza una interfaz visible. El import de `next/image` sin utilizar forma parte de la estructura incompleta y deberá eliminarse o utilizarse cuando se implemente la página.
-- **Dependencias:** App Router de Next.js. Actualmente no utiliza dependencias de componentes del producto.
+- **Comportamiento actual:** Renderiza el estado de autenticación. Si el usuario no está autenticado, muestra un mensaje y un enlace hacia el login. Si está autenticado, muestra la cabecera con el botón de "Cerrar sesión" y la tarjeta de perfil con sus datos (nombre, email y foto de Auth0).
+- **Dependencias:** App Router de Next.js, `@auth0/nextjs-auth0`.
 - **Cómo personalizarlo:**
-  - Implementá únicamente el contenido y los estados de la página principal aprobados por desarrollo.
-  - Conservá el renderizado del servidor de forma predeterminada.
-  - Extraé componentes solamente cuando exista una responsabilidad clara o reutilización concreta.
-  - Documentá en este catálogo cada componente propio que se extraiga.
+  - Implementá el dashboard principal para usuarios logueados aquí.
+  - El estado de no autenticado debería reemplazarse por el landing público o redirigir al login según el flujo.
+
+### `LoginForm`
+
+- **Ubicación:** `offix-frontend/src/app/(auth)/login/login_form.tsx`
+- **Objetivo:** Renderizar el botón de inicio de sesión de Google y gestionar el flujo de autenticación (incluyendo modo mock).
+- **Entorno de renderizado:** Client Component.
+- **Interfaz:** No recibe propiedades.
+- **Dependencias:** `external_auth_modal.tsx`.
+- **Cómo personalizarlo:** Cambiar el ícono o el texto del botón. Habilitar la variable de entorno `NEXT_PUBLIC_MOCK_AUTH` para abrir la simulación.
+
+### `ExternalAuthModal`
+
+- **Ubicación:** `offix-frontend/src/app/(auth)/login/external_auth_modal.tsx`
+- **Objetivo:** Simular visualmente el flujo de redirección de Auth0 en entornos de desarrollo local.
+- **Entorno de renderizado:** Client Component.
+- **Interfaz:** `onClose: () => void`, `onContinue: () => void`.
+- **Dependencias:** `lucide-react`, `@/components/ui/button`.
+- **Cómo personalizarlo:** Modificar el nombre del usuario de prueba o el estilo de la cabecera del navegador simulado.
+
+### `ErrorHandler`
+
+- **Ubicación:** `offix-frontend/src/app/(auth)/login/error_handler.tsx`
+- **Objetivo:** Capturar los parámetros de error en la URL (retornados por Auth0) y mostrar un toast al usuario.
+- **Entorno de renderizado:** Client Component (envuelto en Suspense).
+- **Interfaz:** No recibe propiedades.
+- **Dependencias:** `next/navigation` (`useSearchParams`), `sonner`.
+- **Cómo personalizarlo:** Modificar el mensaje del toast o la duración en base al código de error de Auth0.
 
 ## Registro de componentes de shadcn/ui
 
@@ -158,7 +183,7 @@ Cuando se agregue otro componente, documentalo con esta estructura:
 - **Documentación oficial:** Incluí el enlace exacto del componente en https://ui.shadcn.com/docs/components.
 ```
 
-Sonner está aprobado para notificaciones tipo toast, pero todavía no está agregado ni configurado.
+Sonner está aprobado y agregado al proyecto para notificaciones tipo toast, renderizado en el layout raíz mediante `<Toaster />`.
 
 ## Plantilla para documentar componentes propios
 
@@ -188,7 +213,8 @@ Usá esta estructura para cada componente nuevo:
 | Contacto mediante WhatsApp | Enlace del frontend con datos aprobados del perfil | Sin implementar |
 | Notificaciones por correo electrónico | Backend o servicio externo | Disparadores y plantillas sin definir |
 | shadcn/ui | Frontend | Inicializado con Base UI; `Button` agregado localmente |
-| Sonner | Frontend | Sin agregar ni configurar |
+| Sonner | Frontend | Agregado y configurado en `RootLayout` |
+| Auth0 | Backend / Frontend | Integrado mediante `@auth0/nextjs-auth0` para Universal Login |
 
 ## Requisitos pendientes de definición
 
