@@ -1,211 +1,231 @@
 # Documentación del frontend de OFFIX
 
-## Alcance del documento
+## Alcance
 
-Este documento describe la arquitectura prevista para el frontend y los componentes que existen actualmente en el repositorio. Diferencia el comportamiento implementado de la arquitectura aprobada a futuro para no dar a entender que funcionalidades incompletas ya están disponibles.
+Este documento describe la arquitectura y los componentes mantenidos actualmente. La aplicación de Next.js está en `offix-frontend/`.
 
-El código de la aplicación está ubicado en `offix-frontend/`.
+El único flujo funcional implementado es un prototipo visual y temporal de reseñas. No existe integración de reseñas con backend, autenticación, generación de enlaces, mensajería, notificaciones a profesionales ni moderación.
 
 ## Arquitectura
 
-### Capa de frontend
+### Aplicación y límites
 
-- **Tecnologías:** Next.js, React, TypeScript, Tailwind CSS y shadcn/ui.
-- **Ubicación:** `offix-frontend/`.
-- **Responsabilidades:** Renderizar una interfaz responsiva, realizar las validaciones aprobadas del lado del cliente, comunicarse con el backend mediante HTTP, subir archivos a través del flujo aprobado y administrado por el backend, y mostrar imágenes aprobadas desde la CDN de Cloudflare.
-- **Renderizado:** Utiliza App Router de Next.js y prioriza Server Components. Se puede utilizar SSR cuando mejore el rendimiento y la navegación. Los Client Components quedan reservados para APIs del navegador, estado interactivo, efectos y manejadores de eventos.
-- **Estado actual:** El repositorio contiene la estructura inicial de App Router. shadcn/ui está inicializado con Base UI y contiene el componente `Button`. Los flujos del producto, la integración con la API, las notificaciones de Sonner y la tipografía Raleway todavía no están implementados.
+- **Stack:** Next.js App Router, React, TypeScript estricto, Tailwind CSS, shadcn/ui, Sonner y el rating gratuito de ReUI.
+- **Renderizado:** Los layouts y las páginas de ruta son Server Components. El estado, los formularios, el diálogo y el rating son Client Components porque usan eventos, navegación y estado de React.
+- **Backend previsto:** FastAPI en Render conserva la responsabilidad futura sobre negocio, autenticación, autorización, validación, PostgreSQL de Supabase y confirmación de subidas a Cloudflare.
+- **Límite actual:** El frontend no conoce endpoints, credenciales, sesiones ni contratos de API. Tampoco se conecta directamente a PostgreSQL ni a Cloudflare.
 
-### Capa de backend
+### Prototipo temporal de reseñas
 
-- **Tecnología:** Python con FastAPI, alojado en Render.
-- **Responsabilidades:** Administrar la lógica de negocio, autenticación, autorización, validaciones del servidor, endpoints REST, operaciones de base de datos y la validación y confirmación de la subida de imágenes.
-- **Límite con el frontend:** El frontend debe utilizar contratos HTTP documentados y no debe inferir endpoints ni estructuras de respuesta.
-
-### Capa de persistencia
-
-- **Tecnología:** PostgreSQL mediante Supabase.
-- **Responsabilidades:** Almacenar usuarios, perfiles profesionales, publicaciones de necesidades de servicios, historial de interacciones, reseñas y demás datos estructurados y textos aprobados.
-- **Límite con el frontend:** El navegador y el frontend de Next.js no deben conectarse directamente con PostgreSQL ni recibir credenciales de la base de datos. Todo acceso a los datos debe pasar por FastAPI.
-
-### Capa de almacenamiento de imágenes
-
-- **Tecnología:** Almacenamiento y distribución mediante la CDN de Cloudflare.
-- **Responsabilidades:** Almacenar las imágenes de usuarios por separado de PostgreSQL y servir recursos optimizados.
-- **Flujo de datos:** El backend valida y confirma las subidas. El frontend consume directamente las URLs aprobadas de la CDN. La secuencia exacta de autorización, subida y confirmación todavía no está definida y debe consultarse antes de implementarla.
-
-### Flujo de datos previsto
+Las rutas `/review-test` y `/form-review-test` comparten `src/app/(review_test)/layout.tsx`. Ese layout monta `Review_test_provider`, por lo que el teléfono, el correo, las cuatro puntuaciones, la descripción, el indicador de reapertura y el estado de envío sobreviven solamente a la navegación cliente entre ambas rutas.
 
 ```text
-Navegador / Interfaz de Next.js
-              |
-              | Solicitudes HTTP y flujo aprobado de subida
-              v
-      FastAPI en Render
-              |
-              +---- datos estructurados ----> PostgreSQL en Supabase
-              |
-              +---- valida y confirma ------> Almacenamiento de Cloudflare
-
-Navegador / Interfaz de Next.js ---- entrega de imágenes aprobadas ----> CDN de Cloudflare
+/review-test
+    |
+    | datos válidos en el diálogo
+    v
+/form-review-test ---- Confirmar ----> tarjeta enviada en la misma ruta
+    |
+    | Volver
+    v
+/review-test con el diálogo reabierto
 ```
 
-## Estructura del repositorio
+No se usan query parameters, `localStorage`, `sessionStorage`, cookies ni una biblioteca de estado global. Una recarga elimina el contexto. El acceso directo a `/form-review-test` muestra una salida segura para regresar.
+
+Los valores iniciales y la configuración visual de categorías están aislados en `src/features/reviews/data/review_test_mock.ts`. Las validaciones y el mapeo cualitativo son funciones puras dentro de `src/features/reviews/lib/`.
+
+### Estructura relevante
 
 ```text
-FRONTEND/
-├── AGENTS.md
-├── DOCUMENTATION.md
-├── README.md
-├── requirements.txt
-└── offix-frontend/
-    ├── components.json
-    ├── public/
-    ├── src/
-    │   ├── app/
-    │   │   ├── globals.css
-    │   │   ├── layout.tsx
-    │   │   └── page.tsx
-    │   ├── components/
-    │   │   └── ui/
-    │   │       └── button.tsx
-    │   └── lib/
-    │       └── utils.ts
-    ├── next.config.ts
-    ├── package.json
-    └── pnpm-lock.yaml
+offix-frontend/src/
+├── app/
+│   ├── (review_test)/
+│   │   ├── form-review-test/page.tsx
+│   │   ├── review-test/page.tsx
+│   │   └── layout.tsx
+│   ├── globals.css
+│   ├── layout.tsx
+│   └── page.tsx
+├── components/
+│   ├── reui/rating.tsx
+│   └── ui/
+│       ├── button.tsx
+│       ├── card.tsx
+│       ├── dialog.tsx
+│       ├── input.tsx
+│       ├── label.tsx
+│       ├── sonner.tsx
+│       └── textarea.tsx
+└── features/reviews/
+    ├── components/
+    ├── context/review_test_context.tsx
+    ├── data/review_test_mock.ts
+    ├── lib/
+    └── types/review.ts
 ```
-
-Agregá directorios únicamente cuando una funcionalidad implementada genere una necesidad concreta. Si cambia la arquitectura, actualizá esta sección en el mismo cambio.
 
 ## Sistema de diseño
 
-### Colores aprobados
+`src/app/globals.css` centraliza la paleta mediante tokens semánticos. No hay modo oscuro.
 
-| Uso semántico | Valor hexadecimal | Observaciones |
-| --- | --- | --- |
-| Superficie de componentes | `#6E8898` | Botones y otras superficies de componentes aprobadas |
-| Hover de componentes | `#9FB1BC` | Provisorio hasta que desarrollo confirme su uso definitivo |
-| Fondo general | `#BABCCA` | Fondo principal de la aplicación |
-| Texto de headers y menús | `#BABCCA` | Texto ubicado sobre headers o menús desplegables oscuros |
-| Superficie de headers y menús | `#231942` | Fondo de headers y menús desplegables |
-| Texto general | `#231942` | Texto ubicado sobre el fondo general |
+| Token o uso | Valor |
+| --- | --- |
+| Componentes principales | `#6E8898` |
+| Hover y superficie secundaria | `#9FB1BC` |
+| Fondo general | `#BABCCA` |
+| Superficie fuerte y texto general | `#231942` |
+| Texto sobre superficie fuerte | `#BABCCA` |
 
-Los valores de marca deben exponerse como variables semánticas de CSS o del tema de Tailwind antes de utilizarlos ampliamente. Los colores adicionales, incluidos los de error, advertencia, éxito, foco y estado deshabilitado, requieren aprobación.
+Los blancos, grises, color de error, foco y rating son neutrales o estados semánticos centralizados en el mismo archivo. Como norma, los botones de acción usan texto `#BABCCA` sobre `#231942`. Las acciones de cancelar o cerrar conservan sus variantes discretas y las acciones de eliminar conservan la variante destructiva.
 
-### Tipografía
-
-- **Headers y títulos:** Montserrat, peso `800`.
-- **Cuerpo, párrafos y footers:** Raleway, peso `400`.
-- **Estrategia de carga:** `next/font/google`; no deben utilizarse imports de hojas de estilo remotas ni archivos `.ttf` o `.otf` innecesarios.
-- **Estado actual:** `RootLayout` declara Montserrat y Geist, pero actualmente aplica Geist mediante `--font-sans`. Raleway y la asignación aprobada de Montserrat `800` para títulos y Raleway `400` para cuerpo todavía no están implementadas.
-
-### Tema
-
-No existe una paleta aprobada para el modo oscuro. La inicialización de shadcn/ui agregó variables neutrales y una clase `.dark`; esos valores predeterminados todavía no representan la paleta aprobada de OFFIX y no deben considerarse el tema final del producto.
+`RootLayout` carga Montserrat `600` y `800`, además de Raleway `400`, con `next/font/google`. `font-heading` usa Montserrat; los botones usan Montserrat `600`, los títulos Montserrat `800` y el resto de los controles Raleway.
 
 ## Catálogo de componentes propios
 
 ### `RootLayout`
 
 - **Ubicación:** `offix-frontend/src/app/layout.tsx`.
-- **Objetivo:** Define la estructura HTML raíz requerida por App Router, los metadatos globales, la importación del CSS global, el idioma del documento y las fuentes globales.
-- **Entorno de renderizado:** Server Component.
-- **Interfaz:** Recibe la propiedad requerida `children: React.ReactNode` desde Next.js.
-- **Comportamiento actual:** Renderiza `<html lang="es">` y el cuerpo de la aplicación. Aplica Geist como `font-sans`; Montserrat está declarada pero no aplicada. Los metadatos todavía contienen textos genéricos provisorios.
-- **Dependencias:** `next`, `next/font/google`, tipos de React, `@/lib/utils` y `globals.css`.
-- **Cómo personalizarlo:**
-  - Modificá los metadatos globales en el objeto exportado `metadata` una vez que los textos del producto estén aprobados.
-  - Configurá las fuentes globales aprobadas en las declaraciones de `next/font/google`.
-  - Aplicá las variables generadas para las fuentes sobre `<html>` o `<body>`.
-  - Agregá proveedores globales solamente cuando la funcionalidad y sus dependencias estén aprobadas.
-  - Conservá los elementos obligatorios `<html>` y `<body>`.
+- **Objetivo:** Define HTML en español, metadatos de OFFIX, CSS global y fuentes.
+- **Entorno:** Server Component.
+- **Interfaz:** `children: React.ReactNode`.
+- **Estados/variantes:** No tiene estado interactivo.
+- **Dependencias:** `next`, `next/font/google` y `globals.css`.
+- **Personalización:** Metadatos en `metadata`; pesos y subconjuntos en las declaraciones de fuentes; asignación visual en `globals.css`.
 
 ### `Home`
 
 - **Ubicación:** `offix-frontend/src/app/page.tsx`.
-- **Objetivo:** Define el punto de entrada de la ruta `/`.
-- **Entorno de renderizado:** Server Component.
-- **Interfaz:** No recibe propiedades.
-- **Comportamiento actual:** No renderiza una interfaz visible. El import de `next/image` sin utilizar forma parte de la estructura incompleta y deberá eliminarse o utilizarse cuando se implemente la página.
-- **Dependencias:** App Router de Next.js. Actualmente no utiliza dependencias de componentes del producto.
-- **Cómo personalizarlo:**
-  - Implementá únicamente el contenido y los estados de la página principal aprobados por desarrollo.
-  - Conservá el renderizado del servidor de forma predeterminada.
-  - Extraé componentes solamente cuando exista una responsabilidad clara o reutilización concreta.
-  - Documentá en este catálogo cada componente propio que se extraiga.
+- **Objetivo:** Reserva la ruta `/` sin inventar contenido de producto.
+- **Entorno:** Server Component.
+- **Interfaz:** Sin props.
+- **Estados/variantes:** Renderiza `null`.
+- **Dependencias:** App Router.
+- **Personalización:** Implementar solamente cuando exista un diseño aprobado para la portada.
 
-## Registro de componentes de shadcn/ui
+### `Review_test_layout`
 
-### `Button`
+- **Ubicación:** `offix-frontend/src/app/(review_test)/layout.tsx`.
+- **Objetivo:** Comparte el contexto temporal entre las dos rutas de prueba.
+- **Entorno:** Server Component que compone un proveedor cliente.
+- **Interfaz:** `children: ReactNode`.
+- **Estados/variantes:** No agrega persistencia fuera de la memoria del árbol React.
+- **Dependencias:** `Review_test_provider`.
+- **Personalización:** El límite del route group define qué rutas comparten el prototipo.
 
-- **Ruta local:** `offix-frontend/src/components/ui/button.tsx`.
-- **Objetivo dentro de OFFIX:** Proveer el componente base para acciones. Todavía no está utilizado por una pantalla funcional.
-- **Base:** Primitiva `Button` de `@base-ui/react`.
-- **Variantes disponibles:** `default`, `outline`, `secondary`, `ghost`, `destructive` y `link`.
-- **Tamaños disponibles:** `default`, `xs`, `sm`, `lg`, `icon`, `icon-xs`, `icon-sm` e `icon-lg`.
-- **Personalización:** Modificá las variantes y tamaños en `buttonVariants`. Los colores provienen de las variables semánticas definidas en `globals.css`; antes de usarlo en producto, esas variables deben alinearse con la paleta aprobada de OFFIX.
-- **Documentación oficial:** [Button de shadcn/ui](https://ui.shadcn.com/docs/components/button).
+### `Review_test_page` y `Form_review_test_page`
 
-Cuando se agregue otro componente, documentalo con esta estructura:
+- **Ubicación:** `offix-frontend/src/app/(review_test)/review-test/page.tsx` y `offix-frontend/src/app/(review_test)/form-review-test/page.tsx`.
+- **Objetivo:** Exponen las rutas temporales y delegan su presentación a `Review_entry` y `Review_form`.
+- **Entorno:** Server Components.
+- **Interfaz:** Sin props.
+- **Estados/variantes:** Heredan los estados de sus componentes cliente.
+- **Dependencias:** App Router y los componentes de la feature.
+- **Personalización:** Mantener las rutas delgadas; los cambios del flujo pertenecen a `src/features/reviews/`.
 
-```markdown
-### Nombre del componente
+### `Review_test_provider`
 
-- **Ruta local:** `offix-frontend/...`
-- **Objetivo dentro de OFFIX:** Explicá el flujo aprobado que lo utiliza.
-- **Personalización:** Registrá las variantes locales, variables del tema y cambios de comportamiento.
-- **Documentación oficial:** Incluí el enlace exacto del componente en https://ui.shadcn.com/docs/components.
-```
+- **Ubicación:** `offix-frontend/src/features/reviews/context/review_test_context.tsx`.
+- **Objetivo:** Es la única fuente de estado temporal del prototipo.
+- **Entorno:** Client Component por `useState` y `useContext`.
+- **Interfaz:** `children: ReactNode`; el hook `useReview_test` expone datos y acciones tipadas.
+- **Estados/variantes:** Contacto, cuatro ratings, descripción, reapertura del diálogo y confirmación.
+- **Dependencias:** React, tipos de reseña y `initial_review_test_state`.
+- **Personalización:** Valores iniciales en `review_test_mock.ts`; no agregar persistencia ni llamadas HTTP dentro del proveedor.
 
-Sonner está aprobado para notificaciones tipo toast, pero todavía no está agregado ni configurado.
+### `Review_entry`
 
-## Plantilla para documentar componentes propios
+- **Ubicación:** `offix-frontend/src/features/reviews/components/review_entry.tsx`.
+- **Objetivo:** Muestra el único botón `Calificar` y controla la apertura del diálogo.
+- **Entorno:** Client Component por el estado abierto/cerrado.
+- **Interfaz:** Sin props.
+- **Estados/variantes:** Cerrado, abierto y reapertura solicitada desde el formulario de reseña.
+- **Dependencias:** `Button`, `Client_data_dialog` y el contexto.
+- **Personalización:** Espaciado y proporciones en las clases del `main` y del botón.
 
-Usá esta estructura para cada componente nuevo:
+### `Client_data_dialog`
 
-```markdown
-### `Component_identifier`
+- **Ubicación:** `offix-frontend/src/features/reviews/components/client_data_dialog.tsx`.
+- **Objetivo:** Captura y valida teléfono/correo antes de navegar al formulario.
+- **Entorno:** Client Component por formulario, Sonner, contexto y `useRouter`.
+- **Interfaz:** `on_open_change(open: boolean)`.
+- **Estados/variantes:** Vacío, error por campo, toast de contacto ausente, navegación deshabilitada y contacto válido.
+- **Dependencias:** `Dialog`, `Input`, `Label`, `Button`, `Toaster`, Sonner y helpers de validación.
+- **Personalización:** Mensajes/reglas en `review_validation.ts`; ancho y espacios en el componente. El teléfono explicita que elimina espacios, `+`, guiones y paréntesis.
+- **Accesibilidad:** Labels visibles, `aria-invalid`, feedback asociado, foco modal y cierre por teclado provistos por Base UI.
 
-- **Ubicación:** `offix-frontend/...`
-- **Objetivo:** Una responsabilidad breve y concreta.
-- **Entorno de renderizado:** Server Component o Client Component, incluida la razón para utilizar renderizado del cliente.
-- **Interfaz:** Props, callbacks emitidos y tipos relevantes.
-- **Estados y variantes:** Carga, vacío, éxito, error, deshabilitado, responsivo y variantes visuales aprobadas.
-- **Dependencias:** Componentes del proyecto y componentes externos aprobados.
-- **Cómo personalizarlo:** Contenido, apariencia, comportamiento y restricciones, indicando archivos o props concretos.
-- **Accesibilidad:** Labels, semántica, foco, comportamiento del teclado y anuncios, cuando corresponda.
-```
+### `Review_form`
 
-## Estado de las integraciones
+- **Ubicación:** `offix-frontend/src/features/reviews/components/review_form.tsx`.
+- **Objetivo:** Orquesta contacto de solo lectura, ratings, promedio, descripción y acciones.
+- **Entorno:** Client Component por contexto, eventos y navegación.
+- **Interfaz:** Sin props; consume `useReview_test`.
+- **Estados/variantes:** Datos faltantes, formulario editable, descripción de 0 a 200 caracteres y reseña enviada.
+- **Dependencias:** Componentes UI, `Review_rating_field`, `Submitted_review_card`, configuración y helpers tipados.
+- **Personalización:** `description_limit`, grillas responsive y textos locales. El promedio siempre se deriva; no se guarda. Los datos de contacto deshabilitados conservan el texto morado con opacidad completa.
+- **Accesibilidad:** Secciones con headings, inputs deshabilitados, contador asociado y controles nativos del formulario.
 
-| Integración | Responsable previsto | Estado actual del frontend |
-| --- | --- | --- |
-| API REST de FastAPI en Render | Backend | Contrato y URL base sin configurar |
-| PostgreSQL mediante Supabase | Solamente backend | Sin conexión directa desde el frontend, según lo requerido |
-| Entrega de imágenes de Cloudflare | Frontend para lecturas aprobadas de la CDN | Host y reglas de entrega sin configurar |
-| Confirmación de subidas a Cloudflare | Backend | Protocolo sin definir |
-| Contacto mediante WhatsApp | Enlace del frontend con datos aprobados del perfil | Sin implementar |
-| Notificaciones por correo electrónico | Backend o servicio externo | Disparadores y plantillas sin definir |
-| shadcn/ui | Frontend | Inicializado con Base UI; `Button` agregado localmente |
-| Sonner | Frontend | Sin agregar ni configurar |
+### `Review_rating_field`
 
-## Requisitos pendientes de definición
+- **Ubicación:** `offix-frontend/src/features/reviews/components/review_rating_field.tsx`.
+- **Objetivo:** Presenta una categoría, su ayuda, valor, estrellas y etiqueta cualitativa.
+- **Entorno:** Client Component por el callback del rating.
+- **Interfaz:** `description`, `label`, `rating` y `on_change`.
+- **Estados/variantes:** Valores de `0.5` a `5`, paso `0.5`, con las cinco etiquetas centralizadas.
+- **Dependencias:** `Rating` de ReUI y `get_rating_label`.
+- **Personalización:** Contenido desde `rating_categories`; apariencia en el contenedor y tokens del rating.
+- **Accesibilidad:** Nombre accesible por categoría, valor actual y ayuda asociada; flechas del teclado modifican medio punto.
 
-La implementación debe detenerse y consultar a desarrollo cuando dependa de:
+### `Submitted_review_card`
 
-- La identidad y los permisos de clientes.
-- Las reglas de búsqueda, comparación, ubicación, publicación de necesidades de servicio y contratación.
-- Los límites de validación de cada campo.
-- Las restricciones de adjuntos y el protocolo de subida.
-- El flujo de verificación de matrículas profesionales.
-- Los estados de reseñas, reglas de calificación y comportamiento de moderación.
-- Los endpoints de la API, contratos de datos y transporte de autenticación.
-- El comportamiento final del hover y los colores faltantes para estados semánticos.
+- **Ubicación:** `offix-frontend/src/features/reviews/components/submitted_review_card.tsx`.
+- **Objetivo:** Resume el contacto disponible, promedio, desglose y descripción enviada.
+- **Entorno:** Client Component porque consume el contexto.
+- **Interfaz:** Sin props.
+- **Estados/variantes:** Omite contactos no provistos y muestra `No se agregó una descripción.` cuando corresponde.
+- **Dependencias:** `Card`, contexto, categorías y helpers de rating.
+- **Personalización:** `summary_columns` fija Puntualidad/Calidad a la izquierda y Precio/Atención a la derecha; debajo de `sm` se apilan.
+- **Accesibilidad:** Usa listas de definición y conserva un orden de lectura estable.
 
-## Mantenimiento de la documentación
+## Componentes shadcn/ui
 
-- Actualizá este archivo cuando cambie un componente propio, un componente de shadcn/ui, una integración, un límite de renderizado, un flujo de datos o la estructura del proyecto.
-- Actualizá `README.md` cuando cambien la instalación, configuración de ambiente, comandos, puertos o procedimientos de QA.
-- Verificá que ambos documentos sigan siendo consistentes cada vez que modifiques alguno.
-- Describí el comportamiento actual con precisión e identificá el comportamiento planificado como previsto o no implementado.
+| Componente | Ruta local | Uso en OFFIX | Personalización | Documentación |
+| --- | --- | --- | --- | --- |
+| `Button` | `src/components/ui/button.tsx` | Acciones del flujo | Montserrat `600`; acción normal `#BABCCA` sobre `#231942`; cancelar/cerrar con `outline` o `ghost`; eliminar con `destructive` | [Button](https://ui.shadcn.com/docs/components/button) |
+| `Card` | `src/components/ui/card.tsx` | Estado faltante y resumen enviado | Superficie mediante tokens y espaciado `--card-spacing` | [Card](https://ui.shadcn.com/docs/components/card) |
+| `Dialog` | `src/components/ui/dialog.tsx` | Datos del cliente | Ancho en el consumidor; foco, portal y cierre desde Base UI | [Dialog](https://ui.shadcn.com/docs/components/dialog) |
+| `Input` | `src/components/ui/input.tsx` | Contacto editable y contacto deshabilitado | Estados de foco, error y disabled por tokens | [Input](https://ui.shadcn.com/docs/components/input) |
+| `Label` | `src/components/ui/label.tsx` | Etiquetas visibles | Tipografía y estados peer-disabled | [Label](https://ui.shadcn.com/docs/components/label) |
+| `Textarea` | `src/components/ui/textarea.tsx` | Descripción opcional | Altura y resize en `Review_form` | [Textarea](https://ui.shadcn.com/docs/components/textarea) |
+| `Toaster` | `src/components/ui/sonner.tsx` | Feedback transitorio | Tema claro fijo, íconos locales y helpers que fijan errores en 5 segundos y éxitos en 3 segundos | [Sonner](https://ui.shadcn.com/docs/components/sonner) |
+
+## Componente ReUI
+
+### `Rating`
+
+- **Ruta local:** `offix-frontend/src/components/reui/rating.tsx`.
+- **Objetivo:** Control visual de cinco estrellas para cada categoría.
+- **Fuente:** [ReUI Rating 9](https://reui.io/components/rating/c-rating-9).
+- **Adaptación local:** El componente generado fue convertido en un `input type="range"` transparente sobre las estrellas, con `min=0.5`, `max=5` y `step=0.5`. Esto agrega medias estrellas, control por teclado, nombre accesible, valor accesible y foco visible sin otra dependencia.
+- **Interfaz:** `rating`, `aria_label`, `aria_describedby`, `editable`, `max_rating`, `on_rating_change`, `size`, `show_value` y clases opcionales.
+- **Personalización:** Tamaños en `ratingVariants`/`starVariants`; color mediante `--rating`; granularidad mediante los atributos del range.
+
+## Estado de integraciones
+
+| Integración | Estado actual |
+| --- | --- |
+| API REST de FastAPI | Sin URL ni contrato configurado |
+| PostgreSQL/Supabase | Sin conexión directa desde frontend |
+| Cloudflare | Host y protocolo sin configurar |
+| Autenticación | Sin implementar |
+| WhatsApp, email y notificaciones profesionales | Sin implementar |
+| Flujo productivo de reseñas | Sin implementar; solo prototipo en memoria |
+| shadcn/ui | Componentes requeridos agregados localmente |
+| ReUI | `Rating` agregado y adaptado localmente |
+| Sonner | Configurado para el error del diálogo temporal; duraciones centralizadas para errores y éxitos |
+
+## Mantenimiento
+
+- Actualizá este archivo cuando cambie un componente, integración, límite de renderizado, flujo de datos o estructura.
+- Actualizá `README.md` cuando cambien instalación, configuración, comandos, puertos o verificación de QA.
+- No documentes una integración prevista como implementada.

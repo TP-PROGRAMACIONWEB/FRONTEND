@@ -49,6 +49,7 @@ El proyecto ya declara sus dependencias en `offix-frontend/package.json`.
 - `class-variance-authority`: definición de variantes de componentes.
 - `cn`: composición de nombres de clases.
 - `lucide-react`: biblioteca de íconos configurada por shadcn/ui.
+- `sonner`: notificaciones accesibles utilizadas por el prototipo visual de reseñas.
 - `shadcn` y `tw-animate-css`: estilos y utilidades requeridos por la configuración actual de shadcn/ui.
 
 ### Dependencias de desarrollo
@@ -58,7 +59,7 @@ El proyecto ya declara sus dependencias en `offix-frontend/package.json`.
 - `eslint` y `eslint-config-next`: análisis estático del código.
 - `@types/node`, `@types/react` y `@types/react-dom`: definiciones de tipos.
 
-shadcn/ui ya está inicializado con Base UI y el componente `Button` está disponible localmente. Sonner forma parte del stack aprobado, pero todavía no está agregado.
+shadcn/ui ya está inicializado con Base UI. Están disponibles localmente `Button`, `Card`, `Dialog`, `Input`, `Label`, `Textarea` y `Sonner`; el rating gratuito de ReUI también está instalado y adaptado para medios puntos.
 
 ## Agregar y usar componentes de shadcn/ui
 
@@ -81,21 +82,14 @@ Antes de aceptar cambios de tema, colores o dependencias sugeridos por el asiste
 
 La CLI es la opción recomendada porque copia el componente, instala solamente sus dependencias requeridas y respeta las rutas configuradas en `components.json`.
 
-El componente `Button` ya está agregado. Este es el comando que se utilizaría para recuperarlo o agregarlo en otro checkout inicializado:
+Los componentes que usa actualmente el prototipo ya están versionados. Este es el comando autorizado para recuperarlos en un checkout donde falten:
 
 ```bash
-pnpm dlx shadcn@latest add button
+pnpm dlx shadcn@latest add card dialog input label textarea sonner
+pnpm dlx shadcn@latest add @reui/c-rating-9
 ```
 
-Ejemplos de componentes que todavía pueden agregarse cuando una funcionalidad aprobada los necesite:
-
-```bash
-pnpm dlx shadcn@latest add input
-pnpm dlx shadcn@latest add card
-pnpm dlx shadcn@latest add sonner
-```
-
-Agregá únicamente los componentes necesarios para una funcionalidad aprobada. No instales todos los componentes de manera preventiva.
+No vuelvas a ejecutar esos comandos durante una instalación normal: `pnpm install` usa `package.json` y `pnpm-lock.yaml`. Agregá únicamente componentes requeridos por una funcionalidad aprobada.
 
 ### Importar el componente en el código
 
@@ -117,18 +111,18 @@ import { Button } from "shadcn/ui";
 
 Ese paquete no funciona como un catálogo de componentes de ejecución. Los componentes pasan a formar parte del código fuente de OFFIX.
 
-Para Sonner, primero agregá el componente con la CLI y luego importá el `Toaster` local en el layout:
+Para Sonner, importá el `Toaster` local en el límite visual que deba anunciar mensajes. El prototipo de reseñas lo monta dentro del diálogo para conservar el foco modal:
 
 ```tsx
 import { Toaster } from "@/components/ui/sonner";
 ```
 
-Los mensajes se disparan desde un Client Component mediante la dependencia `sonner` que instala el componente:
+Los mensajes se disparan desde un Client Component mediante los helpers locales. Estos fijan una duración de 5 segundos para errores y 3 segundos para éxitos:
 
 ```tsx
-import { toast } from "sonner";
+import { show_success_toast } from "@/components/ui/sonner";
 
-toast.success("Los cambios se guardaron correctamente");
+show_success_toast("Los cambios se guardaron correctamente");
 ```
 
 ### Instalación manual
@@ -138,6 +132,20 @@ No es obligatorio usar la consola para copiar un componente. También podés seg
 La instalación manual es más propensa a dejar dependencias, imports o variables CSS sin configurar. Por eso, en OFFIX se recomienda utilizar la CLI y revisar el código generado antes de confirmarlo.
 
 Consultá la [instalación oficial para Next.js](https://ui.shadcn.com/docs/installation/next) y el [catálogo oficial de componentes](https://ui.shadcn.com/docs/components).
+
+### Agregar componentes del registro ReUI
+
+El namespace gratuito `@reui` está configurado en `offix-frontend/components.json` para resolver componentes compatibles con shadcn/ui y el estilo `base-nova` del proyecto.
+
+Ejecutá los comandos desde `offix-frontend/`. Por ejemplo, para agregar el componente de puntuación aprobado para el flujo visual de reseñas:
+
+```bash
+pnpm dlx shadcn@latest add @reui/c-rating-9
+```
+
+Antes de confirmar el cambio, revisá los archivos generados, las dependencias de registro y cualquier modificación en `package.json` y `pnpm-lock.yaml`. No agregues componentes ReUI de manera preventiva ni instales bloques premium. La configuración actual utiliza solamente el registro público y no requiere una clave de licencia.
+
+Documentación oficial: [registro de ReUI](https://reui.io/docs/registry) y [Rating 9](https://reui.io/components/rating/c-rating-9).
 
 ## Instalar las dependencias
 
@@ -223,7 +231,19 @@ Antes de comenzar las pruebas funcionales:
 4. Levantá el servidor correspondiente.
 5. Confirmá que la terminal muestre la URL local esperada y que no existan errores de compilación.
 
-Actualmente, la ruta principal no contiene una interfaz visible del producto. Los flujos funcionales, la integración con el backend, los componentes de shadcn/ui, las notificaciones de Sonner y el sistema tipográfico completo todavía no están implementados.
+La ruta `/` sigue sin contenido de producto. Para probar el prototipo visual de reseñas:
+
+1. Abrí [http://localhost:3000/review-test](http://localhost:3000/review-test).
+2. Verificá que `Calificar` abra el diálogo y que el envío vacío muestre el error aprobado.
+3. Probá un teléfono de hasta 11 dígitos, un correo sin espacios que contenga `@` y termine en `.com`, o ambos.
+4. Confirmá que `/form-review-test` muestre el contacto deshabilitado, cuatro ratings iniciales en `2.5` y promedio `2.5`.
+5. Modificá los ratings con mouse y teclado en pasos de `0.5`; verificá el promedio y las etiquetas.
+6. Pegá más de 200 caracteres y comprobá que la descripción y el contador queden en 200.
+7. Usá `Volver` y verificá que el diálogo se reabra con el contacto preservado.
+8. Usá `Confirmar` y comprobá la tarjeta resumen en escritorio y móvil.
+9. Abrí `/form-review-test` en una pestaña nueva o recargala; debe ofrecer un regreso seguro porque el estado no es persistente.
+
+Este flujo no llama a una API ni genera o envía enlaces reales.
 
 ## Resolución de problemas
 
