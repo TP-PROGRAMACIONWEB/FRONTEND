@@ -73,17 +73,9 @@ export default async function Home() {
             </h2>
 
             <div className="flex flex-col items-center gap-4">
-              {user.picture ? (
-                <img
-                  src={user.picture}
-                  alt={user.nombre || "User"}
-                  className="w-20 h-20 rounded-full border-4 border-[#333A2C]"
-                />
-              ) : (
-                <div className="w-20 h-20 rounded-full bg-[#333A2C] flex items-center justify-center text-[#F0F4EF] text-2xl font-bold">
-                  {user.nombre?.charAt(0) || user.email?.charAt(0) || "U"}
-                </div>
-              )}
+              <div className="w-20 h-20 rounded-full bg-[#333A2C] flex items-center justify-center text-[#F0F4EF] text-2xl font-bold">
+                {user.nombre?.charAt(0) || user.email?.charAt(0) || "U"}
+              </div>
 
               <div className="space-y-1">
                 <p className="text-lg font-medium text-[#F0F4EF]">{user.nombre}</p>

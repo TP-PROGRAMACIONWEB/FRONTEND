@@ -127,8 +127,8 @@ No existe una paleta aprobada para el modo oscuro. La inicialización de shadcn/
 - **Objetivo:** Define el punto de entrada de la ruta `/`.
 - **Entorno de renderizado:** Server Component.
 - **Interfaz:** No recibe propiedades.
-- **Comportamiento actual:** Renderiza el estado de autenticación. Si el usuario no está autenticado, muestra un mensaje y un enlace hacia el login. Si está autenticado, muestra la cabecera con el botón de "Cerrar sesión" y la tarjeta de perfil con sus datos (nombre, email y foto de Auth0).
-- **Dependencias:** App Router de Next.js, `@auth0/nextjs-auth0`.
+- **Comportamiento actual:** Renderiza el estado de autenticación. Si el usuario no está autenticado, muestra un mensaje y un enlace hacia el login. Si está autenticado, muestra la cabecera con el botón de "Cerrar sesión" y la tarjeta de perfil con sus datos (nombre y email).
+- **Dependencias:** App Router de Next.js.
 - **Cómo personalizarlo:**
   - Implementá el dashboard principal para usuarios logueados aquí.
   - El estado de no autenticado debería reemplazarse por el landing público o redirigir al login según el flujo.
@@ -139,26 +139,19 @@ No existe una paleta aprobada para el modo oscuro. La inicialización de shadcn/
 - **Objetivo:** Renderizar el botón de inicio de sesión de Google y gestionar el flujo de autenticación (incluyendo modo mock).
 - **Entorno de renderizado:** Client Component.
 - **Interfaz:** No recibe propiedades.
-- **Dependencias:** `external_auth_modal.tsx`.
-- **Cómo personalizarlo:** Cambiar el ícono o el texto del botón. Habilitar la variable de entorno `NEXT_PUBLIC_MOCK_AUTH` para abrir la simulación.
+- **Dependencias:** Ninguna externa.
+- **Cómo personalizarlo:** Cambiar el ícono o el texto del botón.
 
-### `ExternalAuthModal`
 
-- **Ubicación:** `offix-frontend/src/app/(auth)/login/external_auth_modal.tsx`
-- **Objetivo:** Simular visualmente el flujo de redirección de Auth0 en entornos de desarrollo local.
-- **Entorno de renderizado:** Client Component.
-- **Interfaz:** `onClose: () => void`, `onContinue: () => void`.
-- **Dependencias:** `lucide-react`, `@/components/ui/button`.
-- **Cómo personalizarlo:** Modificar el nombre del usuario de prueba o el estilo de la cabecera del navegador simulado.
 
 ### `ErrorHandler`
 
 - **Ubicación:** `offix-frontend/src/app/(auth)/login/error_handler.tsx`
-- **Objetivo:** Capturar los parámetros de error en la URL (retornados por Auth0) y mostrar un toast al usuario.
+- **Objetivo:** Capturar los parámetros de error en la URL (retornados por el backend) y mostrar un toast al usuario.
 - **Entorno de renderizado:** Client Component (envuelto en Suspense).
 - **Interfaz:** No recibe propiedades.
 - **Dependencias:** `next/navigation` (`useSearchParams`), `sonner`.
-- **Cómo personalizarlo:** Modificar el mensaje del toast o la duración en base al código de error de Auth0.
+- **Cómo personalizarlo:** Modificar el mensaje del toast o la duración en base al código de error.
 
 ## Registro de componentes de shadcn/ui
 
@@ -214,7 +207,7 @@ Usá esta estructura para cada componente nuevo:
 | Notificaciones por correo electrónico | Backend o servicio externo | Disparadores y plantillas sin definir |
 | shadcn/ui | Frontend | Inicializado con Base UI; `Button` agregado localmente |
 | Sonner | Frontend | Agregado y configurado en `RootLayout` |
-| Auth0 | Backend / Frontend | Integrado mediante `@auth0/nextjs-auth0` para Universal Login |
+| Autenticación | Backend / Frontend | Integrado mediante API REST de FastAPI con JWT y cookies |
 
 ## Requisitos pendientes de definición
 

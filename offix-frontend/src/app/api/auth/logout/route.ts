@@ -2,8 +2,10 @@ import { NextRequest, NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 
 export async function GET(request: NextRequest) {
-  // Delete the access token cookie to log out locally
   const cookieStore = await cookies();
+  const token = cookieStore.get('access_token')?.value;
+
+  // Delete the access token cookie to log out locally
   cookieStore.delete('access_token');
 
   // We could also call the backend logout endpoint here if needed,
@@ -12,7 +14,6 @@ export async function GET(request: NextRequest) {
   
   // Try to notify the backend (fire and forget, since it's stateless anyway)
   // We don't block the UI if it fails.
-  const token = cookieStore.get('access_token')?.value;
   if (token) {
     try {
       fetch(`${process.env.NEXT_PUBLIC_API_URL}/auth/logout`, {
