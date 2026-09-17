@@ -2,11 +2,30 @@ import { cookies } from 'next/headers';
 import Image from 'next/image';
 import Link from 'next/link';
 
+type User_profile = {
+  id_usuario: number;
+  email: string;
+  nombre: string | null;
+  rol: string;
+};
+
+function is_user_profile(value: unknown): value is User_profile {
+  if (typeof value !== 'object' || value === null) return false;
+
+  const profile = value as Record<string, unknown>;
+  return (
+    typeof profile.id_usuario === 'number' &&
+    typeof profile.email === 'string' &&
+    (typeof profile.nombre === 'string' || profile.nombre === null) &&
+    typeof profile.rol === 'string'
+  );
+}
+
 export default async function Home() {
   const cookieStore = await cookies();
   const token = cookieStore.get('access_token')?.value;
 
-  let user = null;
+  let user: User_profile | null = null;
 
   if (token) {
     try {
@@ -20,7 +39,8 @@ export default async function Home() {
       });
 
       if (res.ok) {
-        user = await res.json();
+        const profile: unknown = await res.json();
+        if (is_user_profile(profile)) user = profile;
       } else {
         console.warn("Invalid token or backend error:", res.status);
       }
@@ -32,7 +52,7 @@ export default async function Home() {
   if (!user) {
     return (
       <div className="flex min-h-screen flex-col items-center justify-center bg-background p-4">
-        <div className="rounded-3xl border-2 border-border bg-foreground p-8 text-center shadow-2xl">
+        <div className="rounded-3xl bg-foreground p-8 text-center shadow-2xl">
           <Image
             alt="OFFIX"
             className="mx-auto mb-6 h-12 w-auto"
@@ -46,9 +66,15 @@ export default async function Home() {
           </h1>
           <Link
             href="/login"
-            className="inline-flex h-12 items-center justify-center rounded-xl bg-primary px-6 font-heading font-semibold text-primary-foreground transition-colors hover:bg-primary/90"
+            className="inline-flex h-12 items-center justify-center rounded-xl border border-background bg-foreground px-6 font-heading font-semibold text-background transition-colors hover:bg-[color-mix(in_oklch,var(--foreground),var(--background)_15%)]"
           >
             Ir al inicio de sesión
+          </Link>
+          <Link
+            href="/oferentes"
+            className="mt-4 block font-heading text-sm font-semibold text-background underline"
+          >
+            Ver profesionales
           </Link>
         </div>
       </div>
@@ -57,7 +83,7 @@ export default async function Home() {
 
   return (
     <div className="flex min-h-screen flex-col bg-background font-sans">
-      <header className="flex w-full items-center justify-between border-b-2 border-border bg-foreground px-6 py-4">
+      <header className="flex w-full items-center justify-between bg-foreground px-6 py-4">
         <div className="flex items-center gap-3">
           <Image
             alt="OFFIX"
@@ -72,14 +98,14 @@ export default async function Home() {
 
         <a
           href="/api/auth/logout"
-          className="inline-flex h-10 items-center justify-center rounded-xl bg-primary px-5 font-heading font-semibold text-primary-foreground transition-colors hover:bg-primary/90"
+          className="inline-flex h-10 items-center justify-center rounded-xl border border-background bg-foreground px-5 font-heading font-semibold text-background transition-colors hover:bg-[color-mix(in_oklch,var(--foreground),var(--background)_15%)]"
         >
           Cerrar sesión
         </a>
       </header>
 
       <main className="flex-1 flex items-center justify-center p-4">
-        <div className="relative w-full max-w-md overflow-hidden rounded-3xl border-2 border-border bg-foreground p-8 shadow-2xl">
+        <div className="relative w-full max-w-md overflow-hidden rounded-3xl bg-foreground p-8 shadow-2xl">
           <div className="pointer-events-none absolute top-0 right-0 -mt-10 -mr-10 size-32 rounded-full bg-background/15 blur-2xl" />
 
           <div className="relative z-10 text-center">
@@ -97,6 +123,13 @@ export default async function Home() {
                 <p className="text-sm text-background">{user.email}</p>
                 <p className="mt-2 text-xs text-background/70">Rol: {user.rol}</p>
               </div>
+
+              <Link
+                className="mt-4 font-heading text-sm font-semibold text-background underline"
+                href="/oferentes"
+              >
+                Ver profesionales
+              </Link>
             </div>
           </div>
         </div>

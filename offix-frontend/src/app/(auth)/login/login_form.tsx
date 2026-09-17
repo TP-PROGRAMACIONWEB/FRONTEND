@@ -6,7 +6,7 @@ export function LoginForm() {
   return (
     <a
       href={loginUrl}
-      className="flex h-12 w-full items-center justify-center gap-3 rounded-xl bg-foreground font-heading font-semibold text-background shadow-sm transition-colors hover:bg-foreground/90 focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
+      className="flex h-12 w-full items-center justify-center gap-3 rounded-xl bg-foreground font-heading font-semibold text-background shadow-sm transition-colors hover:bg-[color-mix(in_oklch,var(--foreground),var(--background)_15%)] focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
     >
       <svg viewBox="0 0 24 24" className="w-5 h-5">
         <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>

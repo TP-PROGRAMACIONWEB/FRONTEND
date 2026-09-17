@@ -47,14 +47,14 @@
 }
 
 :root {
-  --background: #babcca;
+  --background: #f3f0f7;
   --foreground: #231942;
-  --card: #ffffff;
+  --card: #faf8fc;
   --card-foreground: #231942;
-  --popover: #ffffff;
+  --popover: #faf8fc;
   --popover-foreground: #231942;
   --primary: #6e8898;
-  --primary-foreground: #babcca;
+  --primary-foreground: #f3f0f7;
   --secondary: #9fb1bc;
   --secondary-foreground: #231942;
   --muted: #e8e9ed;

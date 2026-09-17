@@ -1,19 +1,12 @@
 import type {
   Review_api_result,
+  Review_invitation,
+  Review_invitation_input,
   Review_request,
   Review_submission,
   Submitted_review,
 } from "@/features/reviews/types/review"
-
-function get_api_base_url() {
-  const api_base_url = process.env.NEXT_PUBLIC_API_URL?.replace(/\/$/, "")
-
-  if (!api_base_url) {
-    throw new Error("NEXT_PUBLIC_API_URL no está configurada.")
-  }
-
-  return api_base_url
-}
+import { get_api_base_url } from "@/lib/api"
 
 function is_record(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null
@@ -21,6 +14,37 @@ function is_record(value: unknown): value is Record<string, unknown> {
 
 function is_nullable_string(value: unknown): value is string | null {
   return typeof value === "string" || value === null
+}
+
+function is_http_url(value: unknown): value is string {
+  if (typeof value !== "string") return false
+
+  try {
+    const protocol = new URL(value).protocol
+    return protocol === "http:" || protocol === "https:"
+  } catch {
+    return false
+  }
+}
+
+function is_review_invitation(value: unknown): value is Review_invitation {
+  if (!is_record(value)) return false
+
+  return (
+    typeof value.id_solicitud === "number" &&
+    typeof value.oferente_id === "number" &&
+    typeof value.codigo_unico === "string" &&
+    typeof value.origen === "string" &&
+    typeof value.nombre_cliente === "string" &&
+    is_nullable_string(value.telefono_cliente) &&
+    is_nullable_string(value.email_cliente) &&
+    typeof value.estado === "string" &&
+    typeof value.fecha_generacion === "string" &&
+    typeof value.fecha_expiracion === "string" &&
+    is_http_url(value.url_resena) &&
+    (value.whatsapp_url === null || is_http_url(value.whatsapp_url)) &&
+    typeof value.email_enviado === "boolean"
+  )
 }
 
 function is_review_request(value: unknown): value is Review_request {
@@ -60,6 +84,54 @@ async function read_json(response: Response): Promise<unknown> {
     return await response.json()
   } catch {
     return null
+  }
+}
+
+export async function create_review_invitation(
+  oferente_id: number,
+  input: Review_invitation_input,
+): Promise<Review_api_result<Review_invitation>> {
+  try {
+    const response = await fetch(
+      `${get_api_base_url()}/oferentes/${oferente_id}/solicitudes-resena`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(input),
+      },
+    )
+    const body = await read_json(response)
+
+    if (!response.ok) {
+      const messages: Record<number, string> = {
+        404: "Tu cuenta todavía no tiene un perfil de oferente.",
+        422: "Revisá el nombre y los datos de contacto ingresados.",
+        502: "No se pudo enviar el correo. Intentá nuevamente más tarde.",
+      }
+
+      return {
+        ok: false,
+        status: response.status,
+        message: messages[response.status] ?? "No pudimos generar el enlace.",
+      }
+    }
+
+    if (!is_review_invitation(body)) {
+      return {
+        ok: false,
+        status: 502,
+        message: "El servidor devolvió una respuesta que no pudimos interpretar.",
+      }
+    }
+
+    return { data: body, ok: true }
+  } catch (error) {
+    console.error("No se pudo generar la solicitud de reseña.", error)
+    return {
+      ok: false,
+      status: 0,
+      message: "No pudimos conectarnos con el servidor. Intentá nuevamente más tarde.",
+    }
   }
 }
 

@@ -53,11 +53,11 @@ Abrí [http://localhost:3000](http://localhost:3000). La documentación interact
 
 ## Verificación de reseñas para QA
 
-La creación del enlace todavía se prueba desde Swagger porque el perfil público que la iniciará no forma parte de esta entrega.
+La navegación pública `/oferentes` muestra los profesionales reales del backend. Cada detalle `/oferentes/{id}` incluye `Calificar`; no requiere iniciar sesión. Swagger sigue disponible como alternativa de QA.
 
-1. Abrí Swagger en `http://localhost:8000/docs` usando `localhost`, no `127.0.0.1`, para respetar CORS.
-2. Ejecutá `POST /api/v1/oferentes/{oferente_id}/solicitudes-resena` con un oferente existente, `nombre_cliente` y al menos un teléfono o correo válido.
-3. Abrí el `url_resena` devuelto, cuya forma es `http://localhost:3000/resena/{codigo_unico}`.
+1. Abrí `http://localhost:3000/oferentes`, elegí un profesional, presioná `Calificar` y cargá el nombre del cliente junto con al menos un teléfono o correo válido.
+2. Si cargaste teléfono, compartí la invitación mediante WhatsApp. Si cargaste correo, el backend envía el enlace al confirmar.
+3. Como alternativa de QA, ejecutá en Swagger `POST /api/v1/oferentes/{oferente_id}/solicitudes-resena` con un oferente existente y abrí el `url_resena` devuelto.
 4. Verificá que nombre, teléfono y correo provengan del backend, se vean en morado y no sean editables.
 5. Modificá las cuatro puntuaciones en pasos de `0.5`; comprobá el promedio y las etiquetas.
 6. Ingresá, si querés, un comentario de hasta 200 caracteres.
@@ -65,7 +65,7 @@ La creación del enlace todavía se prueba desde Swagger porque el perfil públi
 8. Volvé a abrir el mismo enlace: debe informar que ya fue utilizado.
 9. Probá además un código inexistente y verificá el estado de enlace no disponible.
 
-El formulario público no requiere login. Los errores usan toasts de 5 segundos y los éxitos de 3 segundos.
+El listado, el perfil y el formulario de reseña son públicos. Los errores usan toasts de 5 segundos y los éxitos de 3 segundos.
 
 ## Verificación de autenticación
 

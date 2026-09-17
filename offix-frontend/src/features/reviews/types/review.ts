@@ -42,6 +42,25 @@ export type Review_submission = {
   }
 }
 
+export type Review_invitation_input = {
+  nombre_cliente: string
+  telefono_cliente: string | null
+  email_cliente: string | null
+}
+
+export type Review_invitation = Review_invitation_input & {
+  id_solicitud: number
+  oferente_id: number
+  codigo_unico: string
+  origen: string
+  estado: string
+  fecha_generacion: string
+  fecha_expiracion: string
+  url_resena: string
+  whatsapp_url: string | null
+  email_enviado: boolean
+}
+
 export type Submitted_review = {
   id_resena: number
   oferente_id: number
