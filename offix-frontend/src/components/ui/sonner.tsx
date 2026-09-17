@@ -2,12 +2,18 @@
 
 import type { ReactNode } from "react"
 import {
+  AlertCircleIcon,
+  CancelCircleIcon,
+  CheckmarkCircle02Icon,
+  InformationCircleIcon,
+  Loading03Icon,
+} from "hugeicons-react"
+import {
   Toaster as Sonner,
   toast,
   type ExternalToast,
   type ToasterProps,
 } from "sonner"
-import { CircleCheckIcon, InfoIcon, TriangleAlertIcon, OctagonXIcon, Loader2Icon } from "lucide-react"
 
 const error_toast_duration = 5000
 const success_toast_duration = 3000
@@ -29,19 +35,19 @@ const Toaster = ({ ...props }: ToasterProps) => {
       className="toaster group"
       icons={{
         success: (
-          <CircleCheckIcon className="size-4" />
+          <CheckmarkCircle02Icon className="size-4" />
         ),
         info: (
-          <InfoIcon className="size-4" />
+          <InformationCircleIcon className="size-4" />
         ),
         warning: (
-          <TriangleAlertIcon className="size-4" />
+          <AlertCircleIcon className="size-4" />
         ),
         error: (
-          <OctagonXIcon className="size-4" />
+          <CancelCircleIcon className="size-4" />
         ),
         loading: (
-          <Loader2Icon className="size-4 animate-spin" />
+          <Loading03Icon className="size-4 animate-spin" />
         ),
       }}
       toastOptions={{

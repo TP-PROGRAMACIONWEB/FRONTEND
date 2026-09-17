@@ -1,88 +1,117 @@
-"use client";
+"use client"
 
-import { useRouter } from "next/navigation";
+import { Loading03Icon, SentIcon } from "hugeicons-react"
+import { useState } from "react"
 
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
-import { Review_rating_field } from "@/features/reviews/components/review_rating_field";
-import { Submitted_review_card } from "@/features/reviews/components/submitted_review_card";
-import { useReview_test } from "@/features/reviews/context/review_test_context";
-import { rating_categories } from "@/features/reviews/data/review_test_mock";
-import { get_average_rating, is_valid_rating } from "@/features/reviews/lib/rating";
+import { Button } from "@/components/ui/button"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import { show_error_toast, show_success_toast } from "@/components/ui/sonner"
+import { Textarea } from "@/components/ui/textarea"
+import { create_review } from "@/features/reviews/api/reviews"
+import { Review_rating_field } from "@/features/reviews/components/review_rating_field"
+import { Submitted_review_card } from "@/features/reviews/components/submitted_review_card"
+import {
+  initial_ratings,
+  rating_categories,
+} from "@/features/reviews/data/rating_categories"
+import { get_average_rating, is_valid_rating } from "@/features/reviews/lib/rating"
+import type {
+  Rating_values,
+  Review_request,
+  Submitted_review,
+} from "@/features/reviews/types/review"
 
-const description_limit = 200;
+const description_limit = 200
 
-export function Review_form() {
-  const router = useRouter();
-  const review = useReview_test();
-  const has_contact = Boolean(review.phone || review.email);
-  const average = get_average_rating(review.ratings);
+type Review_form_props = {
+  review_request: Review_request
+}
 
-  function handle_back() {
-    review.set_must_reopen_contact(true);
-    router.push("/review-test");
+export function Review_form({ review_request }: Review_form_props) {
+  const [ratings, set_ratings] = useState<Rating_values>(initial_ratings)
+  const [description, set_description] = useState("")
+  const [submitted_review, set_submitted_review] =
+    useState<Submitted_review | null>(null)
+  const [is_submitting, set_is_submitting] = useState(false)
+  const average = get_average_rating(ratings)
+
+  function update_rating(key: keyof Rating_values, rating: number) {
+    set_ratings((current_ratings) => ({ ...current_ratings, [key]: rating }))
   }
 
-  function handle_submit(event: React.FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    if (rating_categories.every(({ key }) => is_valid_rating(review.ratings[key]))) {
-      review.confirm_review();
+  async function handle_submit(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault()
+
+    if (!rating_categories.every(({ key }) => is_valid_rating(ratings[key]))) {
+      show_error_toast("Completá todas las puntuaciones antes de confirmar.")
+      return
     }
+
+    set_is_submitting(true)
+    const result = await create_review({
+      codigo_unico: review_request.codigo_unico,
+      calificaciones_comentarios: {
+        criterios: {
+          precio: ratings.price,
+          calidad: ratings.quality,
+          atencion: ratings.attention,
+          puntualidad: ratings.punctuality,
+        },
+        comentario: description.trim() || null,
+      },
+    })
+    set_is_submitting(false)
+
+    if (!result.ok) {
+      show_error_toast(result.message)
+      return
+    }
+
+    set_submitted_review(result.data)
+    show_success_toast("La reseña se envió correctamente.")
   }
 
-  if (!has_contact) {
+  if (submitted_review) {
     return (
-      <main className="grid min-h-screen place-items-center px-5 py-12">
-        <Card className="w-full max-w-md text-center shadow-lg">
-          <CardHeader>
-            <CardTitle className="font-heading text-xl">
-              No hay datos de contacto
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-5">
-            <p className="text-muted-foreground">
-              Este prototipo conserva los datos solo mientras navegás entre sus rutas.
-            </p>
-            <Button onClick={() => router.push("/review-test")} type="button">
-              Volver a Calificar
-            </Button>
-          </CardContent>
-        </Card>
-      </main>
-    );
-  }
-
-  if (review.submitted) {
-    return (
-      <main className="min-h-screen px-5 py-10 sm:px-8">
-        <Submitted_review_card />
-      </main>
-    );
+      <Submitted_review_card
+        description={description}
+        ratings={ratings}
+        review_request={review_request}
+        submitted_review={submitted_review}
+      />
+    )
   }
 
   return (
     <main className="mx-auto min-h-screen w-full max-w-6xl px-5 py-10 sm:px-8">
       <div className="mb-8">
-        <h1 className="font-heading text-2xl sm:text-3xl">
+        <h1 className="font-heading text-2xl font-extrabold sm:text-3xl">
           Formulario de Reseña del Servicio
         </h1>
-        <p className="text-muted-foreground mt-2">
-          Valorá la atención y el trabajo recibido.
+        <p className="mt-2 text-muted-foreground">
+          Valorá la atención y el trabajo de {review_request.nombre_oferente}.
         </p>
       </div>
 
       <form className="space-y-8" onSubmit={handle_submit}>
-        <section
-          aria-labelledby="contact-heading"
-          className="rounded-xl bg-card p-5 shadow-sm sm:p-6"
-        >
-          <h2 className="font-heading text-xl" id="contact-heading">
-            Datos del Cliente
-          </h2>
-          <div className="mt-5 grid gap-5 sm:grid-cols-2">
+        <Card>
+          <CardHeader>
+            <CardTitle className="font-heading text-xl font-extrabold">
+              Datos del Cliente
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="grid gap-5 sm:grid-cols-2">
+            <div className="space-y-2 sm:col-span-2">
+              <Label htmlFor="review-name">Nombre</Label>
+              <Input
+                className="disabled:text-foreground disabled:opacity-100"
+                disabled
+                id="review-name"
+                value={review_request.nombre_cliente}
+              />
+            </div>
             <div className="space-y-2">
               <Label htmlFor="review-phone">Número de Teléfono</Label>
               <Input
@@ -90,7 +119,7 @@ export function Review_form() {
                 disabled
                 id="review-phone"
                 placeholder="No proporcionado"
-                value={review.phone}
+                value={review_request.telefono_cliente ?? ""}
               />
             </div>
             <div className="space-y-2">
@@ -100,23 +129,23 @@ export function Review_form() {
                 disabled
                 id="review-email"
                 placeholder="No proporcionado"
-                value={review.email}
+                value={review_request.email_cliente ?? ""}
               />
             </div>
-          </div>
-        </section>
+          </CardContent>
+        </Card>
 
         <section aria-labelledby="rating-heading">
           <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
             <div>
-              <h2 className="font-heading text-xl" id="rating-heading">
+              <h2 className="font-heading text-xl font-extrabold" id="rating-heading">
                 Puntuación
               </h2>
-              <p className="text-muted-foreground mt-1 text-sm">
+              <p className="mt-1 text-sm text-muted-foreground">
                 Usá las estrellas para asignar valores de medio punto.
               </p>
             </div>
-            <output className="w-fit rounded-lg border bg-card px-4 py-2 font-heading text-sm">
+            <output className="w-fit rounded-lg border bg-card px-4 py-2 font-heading text-sm font-semibold">
               Promedio general: {average.toFixed(1)} / 5
             </output>
           </div>
@@ -127,52 +156,50 @@ export function Review_form() {
                 description={category.description}
                 key={category.key}
                 label={category.label}
-                on_change={(rating) => review.update_rating(category.key, rating)}
-                rating={review.ratings[category.key]}
+                on_change={(rating) => update_rating(category.key, rating)}
+                rating={ratings[category.key]}
               />
             ))}
           </div>
         </section>
 
-        <section
-          aria-labelledby="description-heading"
-          className="rounded-xl bg-card p-5 shadow-sm sm:p-6"
-        >
-          <Label
-            className="font-heading text-lg"
-            htmlFor="work-description"
-            id="description-heading"
-          >
-            Descripción del trabajo
-          </Label>
-          <Textarea
-            aria-describedby="description-help description-counter"
-            className="mt-3 min-h-32 resize-y"
-            id="work-description"
-            maxLength={description_limit}
-            onChange={(event) =>
-              review.set_description(
-                event.currentTarget.value.slice(0, description_limit),
-              )
-            }
-            placeholder="Ingresá una descripción o comentario sobre el trabajo…"
-            value={review.description}
-          />
-          <div className="text-muted-foreground mt-2 flex justify-between gap-4 text-sm">
-            <p id="description-help">Campo opcional. Máximo 200 caracteres.</p>
-            <p aria-live="polite" id="description-counter">
-              {review.description.length} / {description_limit}
-            </p>
-          </div>
-        </section>
+        <Card>
+          <CardContent>
+            <Label
+              className="font-heading text-lg font-extrabold"
+              htmlFor="work-description"
+            >
+              Descripción del trabajo
+            </Label>
+            <Textarea
+              aria-describedby="description-help description-counter"
+              className="mt-3 min-h-32 resize-y"
+              id="work-description"
+              maxLength={description_limit}
+              onChange={(event) => set_description(event.currentTarget.value)}
+              placeholder="Ingresá una descripción o comentario sobre el trabajo…"
+              value={description}
+            />
+            <div className="mt-2 flex justify-between gap-4 text-sm text-muted-foreground">
+              <p id="description-help">Campo opcional. Máximo 200 caracteres.</p>
+              <p aria-live="polite" id="description-counter">
+                {description.length} / {description_limit}
+              </p>
+            </div>
+          </CardContent>
+        </Card>
 
-        <div className="flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
-          <Button onClick={handle_back} type="button" variant="outline">
-            Volver
+        <div className="flex justify-end">
+          <Button disabled={is_submitting} size="lg" type="submit">
+            {is_submitting ? (
+              <Loading03Icon className="animate-spin" data-icon="inline-start" />
+            ) : (
+              <SentIcon data-icon="inline-start" />
+            )}
+            {is_submitting ? "Enviando…" : "Confirmar"}
           </Button>
-          <Button type="submit">Confirmar</Button>
         </div>
       </form>
     </main>
-  );
+  )
 }

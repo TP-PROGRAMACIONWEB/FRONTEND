@@ -1,8 +1,7 @@
 import type {
   Rating_category,
   Rating_values,
-  Review_test_state,
-} from "@/features/reviews/types/review";
+} from "@/features/reviews/types/review"
 
 export const rating_categories: readonly Rating_category[] = [
   {
@@ -25,20 +24,11 @@ export const rating_categories: readonly Rating_category[] = [
     label: "Atención",
     description: "Trato, comunicación, cordialidad y predisposición.",
   },
-];
+]
 
 export const initial_ratings: Rating_values = {
   punctuality: 2.5,
   price: 2.5,
   quality: 2.5,
   attention: 2.5,
-};
-
-export const initial_review_test_state: Review_test_state = {
-  phone: "",
-  email: "",
-  ratings: initial_ratings,
-  description: "",
-  must_reopen_contact: false,
-  submitted: false,
-};
+}

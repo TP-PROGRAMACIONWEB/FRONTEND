@@ -2,6 +2,8 @@ import type { Metadata } from "next";
 import { Montserrat, Raleway } from "next/font/google";
 import "./globals.css";
 
+import { Toaster } from "@/components/ui/sonner";
+
 const montserrat = Montserrat({
   subsets: ["latin"],
   variable: "--font-montserrat",
@@ -19,6 +21,9 @@ const raleway = Raleway({
 export const metadata: Metadata = {
   title: "OFFIX",
   description: "Plataforma para conectar clientes con profesionales de oficios.",
+  icons: {
+    icon: "/logos/logo-simple-blanco.png",
+  },
 };
 
 export default function RootLayout({
@@ -28,7 +33,10 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="es" className={`${montserrat.variable} ${raleway.variable}`}>
-      <body>{children}</body>
+      <body>
+        {children}
+        <Toaster />
+      </body>
     </html>
   );
 }

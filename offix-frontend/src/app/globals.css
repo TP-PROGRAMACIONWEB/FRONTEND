@@ -1,6 +1,5 @@
 @import "tailwindcss";
-@import "tw-animate-css";
-@import "shadcn/tailwind.css";
+@plugin "tailwindcss-animate";
 /*------*/
 @custom-variant dark (&:is(.dark *));
 
@@ -55,7 +54,7 @@
   --popover: #ffffff;
   --popover-foreground: #231942;
   --primary: #6e8898;
-  --primary-foreground: #231942;
+  --primary-foreground: #babcca;
   --secondary: #9fb1bc;
   --secondary-foreground: #231942;
   --muted: #e8e9ed;
@@ -74,9 +73,11 @@
   * {
     @apply border-border outline-ring/50;
   }
+
   body {
     @apply min-h-screen bg-background font-sans text-foreground antialiased;
   }
+
   html {
     @apply font-sans;
   }

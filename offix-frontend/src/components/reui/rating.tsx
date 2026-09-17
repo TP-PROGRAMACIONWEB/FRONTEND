@@ -2,7 +2,7 @@
 
 import type { ComponentProps } from "react"
 import { cva, type VariantProps } from "class-variance-authority"
-import { StarIcon } from "lucide-react"
+import { StarIcon } from "hugeicons-react"
 
 import { cn } from "@/lib/utils"
 
