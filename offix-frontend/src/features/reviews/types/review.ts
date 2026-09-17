@@ -80,6 +80,20 @@ export type Submitted_review = {
   fecha_creacion: string
 }
 
+export type Review_notification = {
+  id_notificacion: number
+  tipo: string
+  mensaje: string
+  requiere_accion: boolean
+  estado: string
+  resena_id: number | null
+  nombre_cliente: string | null
+  telefono_cliente: string | null
+  email_cliente: string | null
+  fecha_creacion: string
+  fecha_resolucion: string | null
+}
+
 export type Review_api_result<T> =
   | { data: T; ok: true }
   | { message: string; ok: false; status: number }

@@ -2,7 +2,7 @@
 
 ## Alcance implementado
 
-La aplicación Next.js está en `offix-frontend/`. Actualmente integra el login incorporado desde `main`, la consulta pública de profesionales, la generación de solicitudes desde un perfil real y el flujo público de carga de reseñas.
+La aplicación Next.js está en `offix-frontend/`. Actualmente integra el login incorporado desde `main`, la consulta pública de profesionales, la generación de solicitudes desde un perfil real, el flujo público de carga y la moderación de reseñas por el oferente autenticado.
 
 Una persona con un enlace válido puede reseñar sin iniciar sesión. El frontend nunca se conecta directamente a PostgreSQL ni contiene credenciales de Auth0, Brevo, WhatsApp o base de datos.
 
@@ -11,8 +11,9 @@ Una persona con un enlace válido puede reseñar sin iniciar sesión. El fronten
 - **Stack:** Next.js App Router, React, TypeScript estricto, Tailwind CSS, componentes locales de shadcn/ui sobre Base UI, Sonner, ReUI Rating y Huge Icons.
 - **Servidor:** `/oferentes` y `/oferentes/[id]` consultan perfiles públicos reales; `src/app/resena/[code]/page.tsx` consulta el enlace y decide si renderizar el formulario o un estado no utilizable.
 - **Cliente:** `Review_request_button` genera el enlace para el oferente mostrado. `Review_form` mantiene únicamente los valores aún no enviados, evita envíos duplicados y publica la reseña con `fetch` nativo.
-- **API:** los módulos de `features/professionals` y `features/reviews` validan respuestas desconocidas y usan la URL centralizada en `src/lib/api.ts`.
-- **Autenticación:** `/login`, `/api/auth/callback`, `/api/auth/logout` y `/` mantienen el flujo de sesión existente. Reseñas no importa ni exige ese estado.
+- **API:** los módulos de `features/professionals` y `features/reviews` validan respuestas desconocidas y usan la URL centralizada en `src/lib/api.ts`. Las rutas servidoras `/api/reviews/notifications` y `/api/reviews/[review_id]/moderate` agregan el token guardado en la cookie `HttpOnly` antes de llamar a FastAPI.
+- **Autenticación:** `/login`, `/api/auth/callback`, `/api/auth/logout` y `/` mantienen el flujo de sesión existente. La carga de reseñas sigue siendo pública; únicamente la bandeja y la moderación requieren la sesión del oferente.
+- **Autorización:** FastAPI filtra la bandeja por `usuario_id` y valida que el oferente autenticado sea dueño de la reseña. El frontend no intenta reemplazar esas reglas con filtros visuales.
 
 ```text
 GET /oferentes --> /oferentes/{id} + Review_request_button
@@ -35,6 +36,11 @@ GET /solicitudes-resena/{codigo} -- no utilizable --> estado informativo
                  |
                  v
  resumen local + estado backend Pendiente_Aceptacion
+                 |
+                 v
+ campana autenticada --> PATCH /resenas/{id}/moderar
+                          | aceptar: publica y recalcula promedio
+                          └ rechazar: no publica ni suma al promedio
 ```
 
 No se conservan mocks, rutas de prototipo, contexto global, `localStorage` ni datos de contacto inventados.
@@ -46,6 +52,7 @@ offix-frontend/src/
 ├── app/
 │   ├── (auth)/login/
 │   ├── api/auth/{callback,logout}/
+│   ├── api/reviews/{notifications,[review_id]/moderate}/
 │   ├── oferentes/{page.tsx,[id]/page.tsx}
 │   ├── resena/[code]/page.tsx
 │   ├── globals.css
@@ -64,7 +71,8 @@ offix-frontend/src/
 │       ├── data/rating_categories.ts
 │       ├── lib/rating.ts
 │       └── types/review.ts
-└── lib/api.ts
+│   └── navigation/components/dashboard_controls.tsx
+└── lib/{api,authenticated_backend}.ts
 ```
 
 ## Sistema visual
@@ -91,17 +99,35 @@ Montserrat `800` se usa en títulos y Raleway `400` en cuerpo. Los íconos funci
 
 - **Ubicación:** `src/app/page.tsx`.
 - **Entorno e interfaz:** Server Component sin props.
-- **Objetivo:** Lee la cookie de acceso, consulta `/auth/me` y muestra acceso o perfil.
-- **Estados/dependencias:** Sin sesión, sesión válida o backend inaccesible; `cookies`, `fetch`, `Link` e `Image`. En ambos estados enlaza al listado público.
+- **Objetivo:** Lee la cookie de acceso, consulta `/auth/me` y muestra acceso o perfil. En sesión válida delega la campana y el menú lateral a `Dashboard_controls`.
+- **Estados/dependencias:** Sin sesión, sesión válida o backend inaccesible; `cookies`, `fetch`, `Link`, `Image` y `Dashboard_controls`. El acceso público al listado permanece disponible sin sesión.
 - **Personalización:** Sólo presentación; no cambiar transporte o validación de sesión desde componentes visuales.
+
+### `Dashboard_controls`
+
+- **Ubicación:** `src/features/navigation/components/dashboard_controls.tsx`.
+- **Entorno e interfaz:** Client Component; recibe `profile_name: string`.
+- **Objetivo:** Reemplazar el logout directo del header por la campana y el menú hamburguesa. El menú se abre desde la derecha, muestra el nombre del perfil, enlaza a `Ver oferentes` con la marca `(test)` y mantiene `Cerrar sesión` al pie.
+- **Estados/dependencias:** Ningún panel, notificaciones o menú abierto; `Button`, `Link`, Huge Icons y `Review_notifications_panel`.
+- **Personalización:** Secciones futuras del menú y ancho responsive. El panel móvil no supera el 82 % del viewport.
+- **Accesibilidad:** Botones con nombre, `aria-expanded`, cierre por fondo o tecla Escape y paneles rotulados como diálogo.
+
+### `Review_notifications_panel`
+
+- **Ubicación:** `src/features/reviews/components/review_notifications_panel.tsx`.
+- **Entorno e interfaz:** Client Component; recibe `is_open`, `on_close` y `on_pending_count_change`.
+- **Objetivo:** Consultar las notificaciones del usuario autenticado, mostrar únicamente reseñas pendientes de decisión y permitir aceptarlas o rechazarlas.
+- **Estados/dependencias:** Cargando, vacío, error recuperable y moderación pendiente; API interna de reseñas, Sonner, `Button`, Huge Icons y `router.refresh()`.
+- **Personalización:** Textos, ancho y distribución de las tarjetas. La propiedad, publicación y cálculo del promedio pertenecen al backend.
+- **Accesibilidad:** Fechas semánticas, datos de contacto como texto no editable, controles rotulados y bloqueo de acciones duplicadas.
 
 ### `Professionals_page`
 
 - **Ubicación:** `src/app/oferentes/page.tsx`.
 - **Entorno e interfaz:** Server Component dinámico sin props.
-- **Objetivo:** Listar los oferentes reales y enlazar cada tarjeta a su perfil público.
+- **Objetivo:** Listar los oferentes reales, enlazar cada tarjeta a su perfil público y ofrecer un encabezado visible con acceso al inicio.
 - **Estados/dependencias:** Listado, vacío o error de conexión; API de profesionales, categorías, `Image`, `Link` y Huge Icons.
-- **Personalización:** Grilla, resumen de tarjeta y textos; nunca fijar un `id_oferente` en el frontend.
+- **Personalización:** Encabezado, botón `Inicio`, grilla, resumen de tarjeta y textos; nunca fijar un `id_oferente` en el frontend.
 
 ### `Professional_page`, `Profile_detail` y `Profile_error`
 
@@ -109,7 +135,7 @@ Montserrat `800` se usa en títulos y Raleway `400` en cuerpo. Los íconos funci
 - **Entorno e interfaz:** Server Components; la página recibe `params: Promise<{ id: string }>` y los auxiliares reciben datos presentacionales.
 - **Objetivo:** Mostrar un perfil público real, sus datos disponibles y la entrada al flujo de reseña.
 - **Estados/dependencias:** Perfil válido, ID inválido, inexistente o backend inaccesible; API de profesionales, `Review_request_button`, `Link` y Huge Icons.
-- **Personalización:** Distribución y campos visibles aprobados; DNI/CUIT, coordenadas y datos internos no se renderizan.
+- **Personalización:** Distribución, botón `Volver a profesionales` y campos visibles aprobados; DNI/CUIT, coordenadas y datos internos no se renderizan.
 
 ### `LoginPage`, `LoginForm` y `ErrorHandler`
 
@@ -197,7 +223,7 @@ Montserrat `800` se usa en títulos y Raleway `400` en cuerpo. Los íconos funci
 | Perfiles profesionales | Listado y detalle públicos en `/oferentes` y `/oferentes/[id]` |
 | Solicitud de reseña | Se genera desde “Calificar” en un perfil real; Swagger continúa disponible para QA |
 | Formulario público | Implementado en `/resena/[code]`, sin login |
-| Moderación | Backend deja la reseña en `Pendiente_Aceptacion`; UI del profesional fuera de esta entrega |
+| Moderación | Activa desde la campana autenticada; aceptar publica y recalcula, rechazar no publica ni suma al promedio |
 | Auth0/Google | Integración de `main` preservada |
 | PostgreSQL/Supabase | Sólo backend; sin conexión frontend |
 | Email/WhatsApp | Backend genera/envía; el frontend sólo consume el enlace recibido |

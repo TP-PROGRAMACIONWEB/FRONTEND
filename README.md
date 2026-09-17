@@ -7,7 +7,7 @@ La arquitectura y el catálogo de componentes se documentan en [DOCUMENTATION.md
 ## Requisitos
 
 - Node.js 20.9 o posterior; se recomienda Node.js 24 LTS.
-- pnpm 12.4.1.
+- pnpm 12.4.1, administrado mediante Corepack incluido con Node.js.
 - Backend de OFFIX disponible para autenticación y reseñas.
 
 No uses npm, Yarn ni Bun para instalar dependencias.
@@ -16,8 +16,10 @@ No uses npm, Yarn ni Bun para instalar dependencias.
 
 ```bash
 cd offix-frontend
-pnpm install --frozen-lockfile
+corepack pnpm install --frozen-lockfile
 ```
+
+En Windows, usá `corepack pnpm` si PowerShell informa que `pnpm` no se reconoce. No cambió el script del proyecto: Corepack solamente ejecuta la versión `12.4.1` declarada en `package.json` sin depender de una instalación global.
 
 El frontend usa Next.js, React, TypeScript, Tailwind CSS, primitivas Base UI para los componentes locales de shadcn/ui, Sonner, ReUI Rating y Huge Icons. `package.json` y `pnpm-lock.yaml` son la fuente de verdad de las versiones.
 
@@ -37,7 +39,7 @@ Levantá primero el backend en el puerto 8000. Después ejecutá:
 
 ```bash
 cd offix-frontend
-pnpm dev
+corepack pnpm dev
 ```
 
 Abrí [http://localhost:3000](http://localhost:3000). La documentación interactiva del backend se encuentra en [http://localhost:8000/docs](http://localhost:8000/docs).
@@ -46,10 +48,10 @@ Abrí [http://localhost:3000](http://localhost:3000). La documentación interact
 
 | Comando | Uso |
 | --- | --- |
-| `pnpm dev` | Levanta el frontend en desarrollo |
-| `pnpm lint` | Ejecuta ESLint |
-| `pnpm build` | Compila y valida producción |
-| `pnpm start` | Sirve una compilación ya generada |
+| `corepack pnpm dev` | Levanta el frontend en desarrollo |
+| `corepack pnpm lint` | Ejecuta ESLint |
+| `corepack pnpm build` | Compila y valida producción |
+| `corepack pnpm start` | Sirve una compilación ya generada |
 
 ## Verificación de reseñas para QA
 
@@ -62,8 +64,10 @@ La navegación pública `/oferentes` muestra los profesionales reales del backen
 5. Modificá las cuatro puntuaciones en pasos de `0.5`; comprobá el promedio y las etiquetas.
 6. Ingresá, si querés, un comentario de hasta 200 caracteres.
 7. Confirmá una sola vez. Debe aparecer el resumen y el backend debe dejar la reseña en `Pendiente_Aceptacion`.
-8. Volvé a abrir el mismo enlace: debe informar que ya fue utilizado.
-9. Probá además un código inexistente y verificá el estado de enlace no disponible.
+8. Iniciá sesión como el oferente calificado, abrí la campana y verificá que la solicitud aparezca solamente en su bandeja.
+9. Aceptá la reseña y comprobá que se publique y actualice el promedio. Si la rechazás, no se publica ni participa del promedio; el rechazo no resta puntos por sí mismo.
+10. Volvé a abrir el mismo enlace: debe informar que ya fue utilizado.
+11. Probá además un código inexistente y verificá el estado de enlace no disponible.
 
 El listado, el perfil y el formulario de reseña son públicos. Los errores usan toasts de 5 segundos y los éxitos de 3 segundos.
 
@@ -72,8 +76,10 @@ El listado, el perfil y el formulario de reseña son públicos. Los errores usan
 - `/login` inicia el flujo delegado al backend mediante Google/Auth0.
 - `/api/auth/callback` y `/api/auth/logout` conservan el comportamiento incorporado desde `main`.
 - `/` consulta `/auth/me` cuando existe la cookie `access_token`.
+- La campana consulta la bandeja al cargar y cada vez que se abre. No utiliza notificaciones push ni sondeo en segundo plano.
+- `/api/reviews/notifications` y `/api/reviews/{review_id}/moderate` reenvían las operaciones protegidas desde el servidor de Next.js sin exponer la cookie `HttpOnly`.
 
-La integración de reseñas no modifica esas rutas ni su transporte de sesión.
+La integración de reseñas reutiliza la sesión existente sin modificar el login, callback ni logout.
 
 ## Problemas frecuentes
 
@@ -97,8 +103,8 @@ Ese atributo lo inyecta una extensión del navegador. Desactivala para `localhos
 
 ```bash
 cd offix-frontend
-pnpm lint
-pnpm build
+corepack pnpm lint
+corepack pnpm build
 ```
 
 No se mantiene una suite automatizada permanente en este repositorio.

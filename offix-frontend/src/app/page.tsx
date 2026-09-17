@@ -2,6 +2,10 @@ import { cookies } from 'next/headers';
 import Image from 'next/image';
 import Link from 'next/link';
 
+import { Dashboard_controls } from '@/features/navigation/components/dashboard_controls';
+import { is_review_notification } from '@/features/reviews/api/review_notifications';
+import type { Review_notification } from '@/features/reviews/types/review';
+
 type User_profile = {
   id_usuario: number;
   email: string;
@@ -26,23 +30,31 @@ export default async function Home() {
   const token = cookieStore.get('access_token')?.value;
 
   let user: User_profile | null = null;
+  let initial_notifications: Review_notification[] = [];
 
   if (token) {
     try {
-      // Fetch user profile from the backend
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/auth/me`, {
-        headers: {
-          Authorization: `Bearer ${token}`
-        },
-        // We can use Next.js cache options if needed, but for auth we usually want fresh data or specific revalidation
-        cache: 'no-store'
-      });
+      const request_options = {
+        headers: { Authorization: `Bearer ${token}` },
+        cache: 'no-store' as const,
+      };
+      const [res, notifications_res] = await Promise.all([
+        fetch(`${process.env.NEXT_PUBLIC_API_URL}/auth/me`, request_options),
+        fetch(`${process.env.NEXT_PUBLIC_API_URL}/notificaciones`, request_options),
+      ]);
 
       if (res.ok) {
         const profile: unknown = await res.json();
         if (is_user_profile(profile)) user = profile;
       } else {
         console.warn("Invalid token or backend error:", res.status);
+      }
+
+      if (notifications_res.ok) {
+        const notifications: unknown = await notifications_res.json();
+        if (Array.isArray(notifications) && notifications.every(is_review_notification)) {
+          initial_notifications = notifications;
+        }
       }
     } catch (error) {
       console.error("Failed to fetch user profile:", error);
@@ -96,12 +108,10 @@ export default async function Home() {
           <span className="font-heading text-xl font-extrabold tracking-wide text-background">OFFIX</span>
         </div>
 
-        <a
-          href="/api/auth/logout"
-          className="inline-flex h-10 items-center justify-center rounded-xl border border-background bg-foreground px-5 font-heading font-semibold text-background transition-colors hover:bg-[color-mix(in_oklch,var(--foreground),var(--background)_15%)]"
-        >
-          Cerrar sesión
-        </a>
+        <Dashboard_controls
+          initial_notifications={initial_notifications}
+          profile_name={user.nombre || user.email}
+        />
       </header>
 
       <main className="flex-1 flex items-center justify-center p-4">
@@ -123,13 +133,6 @@ export default async function Home() {
                 <p className="text-sm text-background">{user.email}</p>
                 <p className="mt-2 text-xs text-background/70">Rol: {user.rol}</p>
               </div>
-
-              <Link
-                className="mt-4 font-heading text-sm font-semibold text-background underline"
-                href="/oferentes"
-              >
-                Ver profesionales
-              </Link>
             </div>
           </div>
         </div>
