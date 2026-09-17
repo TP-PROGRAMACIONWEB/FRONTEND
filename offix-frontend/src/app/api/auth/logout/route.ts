@@ -11,7 +11,7 @@ export async function GET(request: NextRequest) {
   // We could also call the backend logout endpoint here if needed,
   // but the OpenAPI says: "El cierre de sesión real lo hace el cliente descartando el token guardado."
   // And it returns 204 if we send the token to `POST /api/v1/auth/logout`.
-  
+
   // Try to notify the backend (fire and forget, since it's stateless anyway)
   // We don't block the UI if it fails.
   if (token) {

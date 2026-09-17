@@ -1,27 +1,60 @@
 import { cookies } from 'next/headers';
+import Image from 'next/image';
 import Link from 'next/link';
+
+import { Dashboard_controls } from '@/features/navigation/components/dashboard_controls';
+import { is_review_notification } from '@/features/reviews/api/review_notifications';
+import type { Review_notification } from '@/features/reviews/types/review';
+
+type User_profile = {
+  id_usuario: number;
+  email: string;
+  nombre: string | null;
+  rol: string;
+};
+
+function is_user_profile(value: unknown): value is User_profile {
+  if (typeof value !== 'object' || value === null) return false;
+
+  const profile = value as Record<string, unknown>;
+  return (
+    typeof profile.id_usuario === 'number' &&
+    typeof profile.email === 'string' &&
+    (typeof profile.nombre === 'string' || profile.nombre === null) &&
+    typeof profile.rol === 'string'
+  );
+}
 
 export default async function Home() {
   const cookieStore = await cookies();
   const token = cookieStore.get('access_token')?.value;
 
-  let user = null;
+  let user: User_profile | null = null;
+  let initial_notifications: Review_notification[] = [];
 
   if (token) {
     try {
-      // Fetch user profile from the backend
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/auth/me`, {
-        headers: {
-          Authorization: `Bearer ${token}`
-        },
-        // We can use Next.js cache options if needed, but for auth we usually want fresh data or specific revalidation
-        cache: 'no-store'
-      });
+      const request_options = {
+        headers: { Authorization: `Bearer ${token}` },
+        cache: 'no-store' as const,
+      };
+      const [res, notifications_res] = await Promise.all([
+        fetch(`${process.env.NEXT_PUBLIC_API_URL}/auth/me`, request_options),
+        fetch(`${process.env.NEXT_PUBLIC_API_URL}/notificaciones`, request_options),
+      ]);
 
       if (res.ok) {
-        user = await res.json();
+        const profile: unknown = await res.json();
+        if (is_user_profile(profile)) user = profile;
       } else {
         console.warn("Invalid token or backend error:", res.status);
+      }
+
+      if (notifications_res.ok) {
+        const notifications: unknown = await notifications_res.json();
+        if (Array.isArray(notifications) && notifications.every(is_review_notification)) {
+          initial_notifications = notifications;
+        }
       }
     } catch (error) {
       console.error("Failed to fetch user profile:", error);
@@ -30,17 +63,30 @@ export default async function Home() {
 
   if (!user) {
     return (
-      <div className="min-h-screen bg-[#B4CDED] flex flex-col items-center justify-center p-4">
-        <div className="bg-[#213144] p-8 rounded-3xl shadow-2xl text-center border-2 border-[#333A2C]">
-          <img src="/logos/logo-completo-blanco.png" alt="OFFIX Logo" className="h-12 w-auto mb-6 mx-auto" />
-          <h1 className="text-2xl font-bold text-[#F0F4EF] mb-4 font-heading">
+      <div className="flex min-h-screen flex-col items-center justify-center bg-background p-4">
+        <div className="rounded-3xl bg-foreground p-8 text-center shadow-2xl">
+          <Image
+            alt="OFFIX"
+            className="mx-auto mb-6 h-12 w-auto"
+            height={48}
+            priority
+            src="/logos/logo-completo-blanco.png"
+            width={146}
+          />
+          <h1 className="mb-4 font-heading text-2xl font-extrabold text-background">
             No has iniciado sesión
           </h1>
           <Link
             href="/login"
-            className="inline-flex items-center justify-center bg-[#F0F4EF] text-[#0D1821] font-bold h-12 px-6 rounded-2xl hover:bg-white transition-colors"
+            className="inline-flex h-12 items-center justify-center rounded-xl border border-background bg-foreground px-6 font-heading font-semibold text-background transition-colors hover:bg-[color-mix(in_oklch,var(--foreground),var(--background)_15%)]"
           >
             Ir al inicio de sesión
+          </Link>
+          <Link
+            href="/oferentes"
+            className="mt-4 block font-heading text-sm font-semibold text-background underline"
+          >
+            Ver profesionales
           </Link>
         </div>
       </div>
@@ -48,39 +94,44 @@ export default async function Home() {
   }
 
   return (
-    <div className="min-h-screen bg-[#B4CDED] flex flex-col font-sans">
-      <header className="w-full bg-[#213144] border-b-2 border-[#333A2C] px-6 py-4 flex items-center justify-between">
+    <div className="flex min-h-screen flex-col bg-background font-sans">
+      <header className="flex w-full items-center justify-between bg-foreground px-6 py-4">
         <div className="flex items-center gap-3">
-          <img src="/logos/logo-simple-blanco.png" alt="OFFIX Logo" className="h-8 w-auto" />
-          <span className="text-[#F0F4EF] font-bold text-xl tracking-wide">OFFIX</span>
+          <Image
+            alt="OFFIX"
+            className="h-8 w-auto"
+            height={32}
+            priority
+            src="/logos/logo-simple-blanco.png"
+            width={32}
+          />
+          <span className="font-heading text-xl font-extrabold tracking-wide text-background">OFFIX</span>
         </div>
 
-        <a
-          href="/api/auth/logout"
-          className="inline-flex items-center justify-center bg-[#15202B] text-[#F0F4EF] font-bold h-10 px-5 rounded-2xl hover:bg-black/40 transition-colors border border-[#333A2C]"
-        >
-          Cerrar sesión
-        </a>
+        <Dashboard_controls
+          initial_notifications={initial_notifications}
+          profile_name={user.nombre || user.email}
+        />
       </header>
 
       <main className="flex-1 flex items-center justify-center p-4">
-        <div className="w-full max-w-md bg-[#213144] border-2 border-[#333A2C] rounded-3xl shadow-2xl p-8 overflow-hidden relative">
-          <div className="absolute top-0 right-0 -mt-10 -mr-10 w-32 h-32 bg-[#B4CDED]/15 rounded-full blur-2xl pointer-events-none" />
+        <div className="relative w-full max-w-md overflow-hidden rounded-3xl bg-foreground p-8 shadow-2xl">
+          <div className="pointer-events-none absolute top-0 right-0 -mt-10 -mr-10 size-32 rounded-full bg-background/15 blur-2xl" />
 
           <div className="relative z-10 text-center">
-            <h2 className="text-2xl font-bold text-[#F0F4EF] mb-6 font-heading border-b border-[#333A2C] pb-4">
+            <h2 className="mb-6 border-b border-border pb-4 font-heading text-2xl font-extrabold text-background">
               Perfil del usuario
             </h2>
 
             <div className="flex flex-col items-center gap-4">
-              <div className="w-20 h-20 rounded-full bg-[#333A2C] flex items-center justify-center text-[#F0F4EF] text-2xl font-bold">
+              <div className="flex size-20 items-center justify-center rounded-full bg-primary font-heading text-2xl font-extrabold text-primary-foreground">
                 {user.nombre?.charAt(0) || user.email?.charAt(0) || "U"}
               </div>
 
               <div className="space-y-1">
-                <p className="text-lg font-medium text-[#F0F4EF]">{user.nombre}</p>
-                <p className="text-sm text-[#B4CDED]">{user.email}</p>
-                <p className="text-xs text-[#B4CDED]/70 mt-2">Rol: {user.rol}</p>
+                <p className="text-lg text-background">{user.nombre}</p>
+                <p className="text-sm text-background">{user.email}</p>
+                <p className="mt-2 text-xs text-background/70">Rol: {user.rol}</p>
               </div>
             </div>
           </div>

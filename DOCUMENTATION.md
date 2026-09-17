@@ -1,230 +1,233 @@
 # Documentación del frontend de OFFIX
 
-## Alcance del documento
+## Alcance implementado
 
-Este documento describe la arquitectura prevista para el frontend y los componentes que existen actualmente en el repositorio. Diferencia el comportamiento implementado de la arquitectura aprobada a futuro para no dar a entender que funcionalidades incompletas ya están disponibles.
+La aplicación Next.js está en `offix-frontend/`. Actualmente integra el login incorporado desde `main`, la consulta pública de profesionales, la generación de solicitudes desde un perfil real, el flujo público de carga y la moderación de reseñas por el oferente autenticado.
 
-El código de la aplicación está ubicado en `offix-frontend/`.
+Una persona con un enlace válido puede reseñar sin iniciar sesión. El frontend nunca se conecta directamente a PostgreSQL ni contiene credenciales de Auth0, Brevo, WhatsApp o base de datos.
 
-## Arquitectura
+## Arquitectura y flujo de datos
 
-### Capa de frontend
-
-- **Tecnologías:** Next.js, React, TypeScript, Tailwind CSS y shadcn/ui.
-- **Ubicación:** `offix-frontend/`.
-- **Responsabilidades:** Renderizar una interfaz responsiva, realizar las validaciones aprobadas del lado del cliente, comunicarse con el backend mediante HTTP, subir archivos a través del flujo aprobado y administrado por el backend, y mostrar imágenes aprobadas desde la CDN de Cloudflare.
-- **Renderizado:** Utiliza App Router de Next.js y prioriza Server Components. Se puede utilizar SSR cuando mejore el rendimiento y la navegación. Los Client Components quedan reservados para APIs del navegador, estado interactivo, efectos y manejadores de eventos.
-- **Estado actual:** El repositorio contiene la estructura inicial de App Router. shadcn/ui está inicializado con Base UI y contiene el componente `Button`. Se han configurado la integración inicial con la API (autenticación), las notificaciones globales mediante Sonner y la tipografía Montserrat. Los demás flujos funcionales del producto continúan en desarrollo.
-
-### Capa de backend
-
-- **Tecnología:** Python con FastAPI, alojado en Render.
-- **Responsabilidades:** Administrar la lógica de negocio, autenticación, autorización, validaciones del servidor, endpoints REST, operaciones de base de datos y la validación y confirmación de la subida de imágenes.
-- **Límite con el frontend:** El frontend debe utilizar contratos HTTP documentados y no debe inferir endpoints ni estructuras de respuesta.
-
-### Capa de persistencia
-
-- **Tecnología:** PostgreSQL mediante Supabase.
-- **Responsabilidades:** Almacenar usuarios, perfiles profesionales, publicaciones de necesidades de servicios, historial de interacciones, reseñas y demás datos estructurados y textos aprobados.
-- **Límite con el frontend:** El navegador y el frontend de Next.js no deben conectarse directamente con PostgreSQL ni recibir credenciales de la base de datos. Todo acceso a los datos debe pasar por FastAPI.
-
-### Capa de almacenamiento de imágenes
-
-- **Tecnología:** Almacenamiento y distribución mediante la CDN de Cloudflare.
-- **Responsabilidades:** Almacenar las imágenes de usuarios por separado de PostgreSQL y servir recursos optimizados.
-- **Flujo de datos:** El backend valida y confirma las subidas. El frontend consume directamente las URLs aprobadas de la CDN. La secuencia exacta de autorización, subida y confirmación todavía no está definida y debe consultarse antes de implementarla.
-
-### Flujo de datos previsto
+- **Stack:** Next.js App Router, React, TypeScript estricto, Tailwind CSS, componentes locales de shadcn/ui sobre Base UI, Sonner, ReUI Rating y Huge Icons.
+- **Servidor:** `/oferentes` y `/oferentes/[id]` consultan perfiles públicos reales; `src/app/resena/[code]/page.tsx` consulta el enlace y decide si renderizar el formulario o un estado no utilizable.
+- **Cliente:** `Review_request_button` genera el enlace para el oferente mostrado. `Review_form` mantiene únicamente los valores aún no enviados, evita envíos duplicados y publica la reseña con `fetch` nativo.
+- **API:** los módulos de `features/professionals` y `features/reviews` validan respuestas desconocidas y usan la URL centralizada en `src/lib/api.ts`. Las rutas servidoras `/api/reviews/notifications` y `/api/reviews/[review_id]/moderate` agregan el token guardado en la cookie `HttpOnly` antes de llamar a FastAPI.
+- **Autenticación:** `/login`, `/api/auth/callback`, `/api/auth/logout` y `/` mantienen el flujo de sesión existente. La carga de reseñas sigue siendo pública; únicamente la bandeja y la moderación requieren la sesión del oferente.
+- **Autorización:** FastAPI filtra la bandeja por `usuario_id` y valida que el oferente autenticado sea dueño de la reseña. El frontend no intenta reemplazar esas reglas con filtros visuales.
 
 ```text
-Navegador / Interfaz de Next.js
-              |
-              | Solicitudes HTTP y flujo aprobado de subida
-              v
-      FastAPI en Render
-              |
-              +---- datos estructurados ----> PostgreSQL en Supabase
-              |
-              +---- valida y confirma ------> Almacenamiento de Cloudflare
-
-Navegador / Interfaz de Next.js ---- entrega de imágenes aprobadas ----> CDN de Cloudflare
+GET /oferentes --> /oferentes/{id} + Review_request_button
+                 |
+                 v
+POST /oferentes/{id}/solicitudes-resena
+                 |
+                 v
+       email o enlace de WhatsApp
+                 |
+                 v
+GET /solicitudes-resena/{codigo} -- no utilizable --> estado informativo
+                 |
+              utilizable
+                 v
+       /resena/{codigo} + Review_form
+                 |
+                 v
+           POST /resenas
+                 |
+                 v
+ resumen local + estado backend Pendiente_Aceptacion
+                 |
+                 v
+ campana autenticada --> PATCH /resenas/{id}/moderar
+                          | aceptar: publica y recalcula promedio
+                          └ rechazar: no publica ni suma al promedio
 ```
 
-## Estructura del repositorio
+No se conservan mocks, rutas de prototipo, contexto global, `localStorage` ni datos de contacto inventados.
+
+## Estructura relevante
 
 ```text
-FRONTEND/
-├── AGENTS.md
-├── DOCUMENTATION.md
-├── README.md
-├── requirements.txt
-└── offix-frontend/
-    ├── components.json
-    ├── public/
-    ├── src/
-    │   ├── app/
-    │   │   ├── globals.css
-    │   │   ├── layout.tsx
-    │   │   └── page.tsx
-    │   ├── components/
-    │   │   └── ui/
-    │   │       └── button.tsx
-    │   └── lib/
-    │       └── utils.ts
-    ├── next.config.ts
-    ├── package.json
-    └── pnpm-lock.yaml
+offix-frontend/src/
+├── app/
+│   ├── (auth)/login/
+│   ├── api/auth/{callback,logout}/
+│   ├── api/reviews/{notifications,[review_id]/moderate}/
+│   ├── oferentes/{page.tsx,[id]/page.tsx}
+│   ├── resena/[code]/page.tsx
+│   ├── globals.css
+│   ├── layout.tsx
+│   └── page.tsx
+├── components/
+│   ├── reui/rating.tsx
+│   └── ui/
+├── features/
+│   ├── professionals/
+│   │   ├── api/professionals.ts
+│   │   └── types/professional.ts
+│   └── reviews/
+│       ├── api/reviews.ts
+│       ├── components/
+│       ├── data/rating_categories.ts
+│       ├── lib/rating.ts
+│       └── types/review.ts
+│   └── navigation/components/dashboard_controls.tsx
+└── lib/{api,authenticated_backend}.ts
 ```
 
-Agregá directorios únicamente cuando una funcionalidad implementada genere una necesidad concreta. Si cambia la arquitectura, actualizá esta sección en el mismo cambio.
+## Sistema visual
 
-## Sistema de diseño
+`globals.css` concentra los tokens: fondo lavanda `#F3F0F7`, cards y formularios `#FAF8FC`, texto y superficie fuerte `#231942`, componentes `#6E8898` y hover secundario `#9FB1BC`. Los botones normales usan Montserrat `600`, fondo morado y texto del color del fondo general; su hover aclara el morado mezclándolo con el fondo aprobado. Cancelar/cerrar conservan `outline` o `ghost`; eliminar conserva `destructive`.
 
-### Colores aprobados
+Las cards y el header principal no usan contornos grises; la separación se resuelve con color, espacio y sombra. Los bordes internos de campos, separadores y foco se conservan por legibilidad y accesibilidad.
 
-| Uso semántico | Valor hexadecimal | Observaciones |
-| --- | --- | --- |
-| Superficie de componentes | `#6E8898` | Botones y otras superficies de componentes aprobadas |
-| Hover de componentes | `#9FB1BC` | Provisorio hasta que desarrollo confirme su uso definitivo |
-| Fondo general | `#BABCCA` | Fondo principal de la aplicación |
-| Texto de headers y menús | `#BABCCA` | Texto ubicado sobre headers o menús desplegables oscuros |
-| Superficie de headers y menús | `#231942` | Fondo de headers y menús desplegables |
-| Texto general | `#231942` | Texto ubicado sobre el fondo general |
+Los inputs y textareas conservan su borde para delimitar claramente los campos y muestran un `ring` visible al recibir foco o al quedar inválidos. La tarjeta de login replica la composición clara del perfil profesional, con avatar de marca, título morado y acceso público a profesionales.
 
-Los valores de marca deben exponerse como variables semánticas de CSS o del tema de Tailwind antes de utilizarlos ampliamente. Los colores adicionales, incluidos los de error, advertencia, éxito, foco y estado deshabilitado, requieren aprobación.
-
-### Tipografía
-
-- **Headers y títulos:** Montserrat, peso `800`.
-- **Cuerpo, párrafos y footers:** Raleway, peso `400`.
-- **Estrategia de carga:** `next/font/google`; no deben utilizarse imports de hojas de estilo remotas ni archivos `.ttf` o `.otf` innecesarios.
-- **Estado actual:** `RootLayout` declara Montserrat y Geist, pero actualmente aplica Geist mediante `--font-sans`. Raleway y la asignación aprobada de Montserrat `800` para títulos y Raleway `400` para cuerpo todavía no están implementadas.
-
-### Tema
-
-No existe una paleta aprobada para el modo oscuro. La inicialización de shadcn/ui agregó variables neutrales y una clase `.dark`; esos valores predeterminados todavía no representan la paleta aprobada de OFFIX y no deben considerarse el tema final del producto.
+Montserrat `800` se usa en títulos y Raleway `400` en cuerpo. Los íconos funcionales provienen de Huge Icons. Teléfono y correo son controles deshabilitados con texto morado y opacidad completa.
 
 ## Catálogo de componentes propios
 
 ### `RootLayout`
 
-- **Ubicación:** `offix-frontend/src/app/layout.tsx`.
-- **Objetivo:** Define la estructura HTML raíz requerida por App Router, los metadatos globales, la importación del CSS global, el idioma del documento y las fuentes globales.
-- **Entorno de renderizado:** Server Component.
-- **Interfaz:** Recibe la propiedad requerida `children: React.ReactNode` desde Next.js.
-- **Comportamiento actual:** Renderiza `<html lang="es">` y el cuerpo de la aplicación. Aplica Geist como `font-sans`; Montserrat está declarada pero no aplicada. Los metadatos todavía contienen textos genéricos provisorios.
-- **Dependencias:** `next`, `next/font/google`, tipos de React, `@/lib/utils` y `globals.css`.
-- **Cómo personalizarlo:**
-  - Modificá los metadatos globales en el objeto exportado `metadata` una vez que los textos del producto estén aprobados.
-  - Configurá las fuentes globales aprobadas en las declaraciones de `next/font/google`.
-  - Aplicá las variables generadas para las fuentes sobre `<html>` o `<body>`.
-  - Agregá proveedores globales solamente cuando la funcionalidad y sus dependencias estén aprobadas.
-  - Conservá los elementos obligatorios `<html>` y `<body>`.
+- **Ubicación:** `src/app/layout.tsx`.
+- **Entorno e interfaz:** Server Component; recibe `children`.
+- **Objetivo:** HTML español, metadatos, fuentes, CSS y `Toaster` global.
+- **Estados/dependencias:** Sin estado; Next.js, Montserrat, Raleway y Sonner.
+- **Personalización:** Metadatos, pesos de fuente y tokens globales.
 
 ### `Home`
 
-- **Ubicación:** `offix-frontend/src/app/page.tsx`.
-- **Objetivo:** Define el punto de entrada de la ruta `/`.
-- **Entorno de renderizado:** Server Component.
-- **Interfaz:** No recibe propiedades.
-- **Comportamiento actual:** Renderiza el estado de autenticación. Si el usuario no está autenticado, muestra un mensaje y un enlace hacia el login. Si está autenticado, muestra la cabecera con el botón de "Cerrar sesión" y la tarjeta de perfil con sus datos (nombre y email).
-- **Dependencias:** App Router de Next.js.
-- **Cómo personalizarlo:**
-  - Implementá el dashboard principal para usuarios logueados aquí.
-  - El estado de no autenticado debería reemplazarse por el landing público o redirigir al login según el flujo.
+- **Ubicación:** `src/app/page.tsx`.
+- **Entorno e interfaz:** Server Component sin props.
+- **Objetivo:** Lee la cookie de acceso, consulta `/auth/me` y muestra acceso o perfil. En sesión válida delega la campana y el menú lateral a `Dashboard_controls`.
+- **Estados/dependencias:** Sin sesión, sesión válida o backend inaccesible; `cookies`, `fetch`, `Link`, `Image` y `Dashboard_controls`. El acceso público al listado permanece disponible sin sesión.
+- **Personalización:** Sólo presentación; no cambiar transporte o validación de sesión desde componentes visuales.
 
-### `LoginForm`
+### `Dashboard_controls`
 
-- **Ubicación:** `offix-frontend/src/app/(auth)/login/login_form.tsx`
-- **Objetivo:** Renderizar el botón de inicio de sesión de Google y gestionar el flujo de autenticación (incluyendo modo mock).
-- **Entorno de renderizado:** Client Component.
-- **Interfaz:** No recibe propiedades.
-- **Dependencias:** Ninguna externa.
-- **Cómo personalizarlo:** Cambiar el ícono o el texto del botón.
+- **Ubicación:** `src/features/navigation/components/dashboard_controls.tsx`.
+- **Entorno e interfaz:** Client Component; recibe `profile_name: string`.
+- **Objetivo:** Reemplazar el logout directo del header por la campana y el menú hamburguesa. El menú se abre desde la derecha, muestra el nombre del perfil, enlaza a `Ver oferentes` con la marca `(test)` y mantiene `Cerrar sesión` al pie.
+- **Estados/dependencias:** Ningún panel, notificaciones o menú abierto; `Button`, `Link`, Huge Icons y `Review_notifications_panel`.
+- **Personalización:** Secciones futuras del menú y ancho responsive. El panel móvil no supera el 82 % del viewport.
+- **Accesibilidad:** Botones con nombre, `aria-expanded`, cierre por fondo o tecla Escape y paneles rotulados como diálogo.
 
+### `Review_notifications_panel`
 
+- **Ubicación:** `src/features/reviews/components/review_notifications_panel.tsx`.
+- **Entorno e interfaz:** Client Component; recibe `is_open`, `on_close` y `on_pending_count_change`.
+- **Objetivo:** Consultar las notificaciones del usuario autenticado, mostrar únicamente reseñas pendientes de decisión y permitir aceptarlas o rechazarlas.
+- **Estados/dependencias:** Cargando, vacío, error recuperable y moderación pendiente; API interna de reseñas, Sonner, `Button`, Huge Icons y `router.refresh()`.
+- **Personalización:** Textos, ancho y distribución de las tarjetas. La propiedad, publicación y cálculo del promedio pertenecen al backend.
+- **Accesibilidad:** Fechas semánticas, datos de contacto como texto no editable, controles rotulados y bloqueo de acciones duplicadas.
 
-### `ErrorHandler`
+### `Professionals_page`
 
-- **Ubicación:** `offix-frontend/src/app/(auth)/login/error_handler.tsx`
-- **Objetivo:** Capturar los parámetros de error en la URL (retornados por el backend) y mostrar un toast al usuario.
-- **Entorno de renderizado:** Client Component (envuelto en Suspense).
-- **Interfaz:** No recibe propiedades.
-- **Dependencias:** `next/navigation` (`useSearchParams`), `sonner`.
-- **Cómo personalizarlo:** Modificar el mensaje del toast o la duración en base al código de error.
+- **Ubicación:** `src/app/oferentes/page.tsx`.
+- **Entorno e interfaz:** Server Component dinámico sin props.
+- **Objetivo:** Listar los oferentes reales, enlazar cada tarjeta a su perfil público y ofrecer un encabezado visible con acceso al inicio.
+- **Estados/dependencias:** Listado, vacío o error de conexión; API de profesionales, categorías, `Image`, `Link` y Huge Icons.
+- **Personalización:** Encabezado, botón `Inicio`, grilla, resumen de tarjeta y textos; nunca fijar un `id_oferente` en el frontend.
 
-## Registro de componentes de shadcn/ui
+### `Professional_page`, `Profile_detail` y `Profile_error`
 
-### `Button`
+- **Ubicación:** `src/app/oferentes/[id]/page.tsx`.
+- **Entorno e interfaz:** Server Components; la página recibe `params: Promise<{ id: string }>` y los auxiliares reciben datos presentacionales.
+- **Objetivo:** Mostrar un perfil público real, sus datos disponibles y la entrada al flujo de reseña.
+- **Estados/dependencias:** Perfil válido, ID inválido, inexistente o backend inaccesible; API de profesionales, `Review_request_button`, `Link` y Huge Icons.
+- **Personalización:** Distribución, botón `Volver a profesionales` y campos visibles aprobados; DNI/CUIT, coordenadas y datos internos no se renderizan.
 
-- **Ruta local:** `offix-frontend/src/components/ui/button.tsx`.
-- **Objetivo dentro de OFFIX:** Proveer el componente base para acciones. Todavía no está utilizado por una pantalla funcional.
-- **Base:** Primitiva `Button` de `@base-ui/react`.
-- **Variantes disponibles:** `default`, `outline`, `secondary`, `ghost`, `destructive` y `link`.
-- **Tamaños disponibles:** `default`, `xs`, `sm`, `lg`, `icon`, `icon-xs`, `icon-sm` e `icon-lg`.
-- **Personalización:** Modificá las variantes y tamaños en `buttonVariants`. Los colores provienen de las variables semánticas definidas en `globals.css`; antes de usarlo en producto, esas variables deben alinearse con la paleta aprobada de OFFIX.
-- **Documentación oficial:** [Button de shadcn/ui](https://ui.shadcn.com/docs/components/button).
+### `LoginPage`, `LoginForm` y `ErrorHandler`
 
-Cuando se agregue otro componente, documentalo con esta estructura:
+- **Ubicación:** `src/app/(auth)/login/`.
+- **Entorno:** Página servidor; formulario y manejador de query cliente.
+- **Objetivo:** Presentar el acceso, iniciar Google/Auth0 desde el backend y mostrar errores de retorno.
+- **Interfaz:** Sin props públicas.
+- **Estados/dependencias:** Error ausente/presente; `NEXT_PUBLIC_API_URL`, `Suspense`, Sonner e imagen de marca.
+- **Personalización:** Clases visuales y textos; el destino del login pertenece al contrato de autenticación.
 
-```markdown
-### Nombre del componente
+### `Review_page`
 
-- **Ruta local:** `offix-frontend/...`
-- **Objetivo dentro de OFFIX:** Explicá el flujo aprobado que lo utiliza.
-- **Personalización:** Registrá las variantes locales, variables del tema y cambios de comportamiento.
-- **Documentación oficial:** Incluí el enlace exacto del componente en https://ui.shadcn.com/docs/components.
-```
+- **Ubicación:** `src/app/resena/[code]/page.tsx`.
+- **Entorno e interfaz:** Server Component dinámico; `params: Promise<{ code: string }>`.
+- **Objetivo:** Obtener la solicitud real y seleccionar formulario o estado informativo.
+- **Estados/dependencias:** Disponible, usada, vencida, inexistente, respuesta inválida o red caída; API de reseñas.
+- **Personalización:** Mensajes de estado; la ruta singular coincide con `url_resena` del backend.
 
-Sonner está aprobado y agregado al proyecto para notificaciones tipo toast, renderizado en el layout raíz mediante `<Toaster />`.
+### `Review_request_button`
 
-## Plantilla para documentar componentes propios
+- **Ubicación:** `src/features/reviews/components/review_request_button.tsx`.
+- **Entorno e interfaz:** Client Component; recibe `oferente_id: number` desde el perfil público validado.
+- **Objetivo:** Mostrar “Calificar”, validar los datos del cliente, crear la solicitud real y confirmar el envío por correo u ofrecer el enlace de WhatsApp resultante.
+- **Estados/dependencias:** Cerrado, formulario, enviando, error y enlace generado; API de reseñas, componentes UI, Sonner y Huge Icons.
+- **Personalización:** Textos y distribución visual. Las reglas de contacto y el vínculo entre `id_usuario` e `id_oferente` pertenecen al contrato del backend.
+- **Accesibilidad:** Labels visibles, ayuda y errores propios asociados mediante ARIA, foco de error visible, estado deshabilitado durante el envío y enlaces identificados por texto. El formulario usa `noValidate` para reemplazar los mensajes genéricos del navegador por textos específicos en español.
 
-Usá esta estructura para cada componente nuevo:
+### `Review_form`
 
-```markdown
-### `Component_identifier`
+- **Ubicación:** `src/features/reviews/components/review_form.tsx`.
+- **Entorno e interfaz:** Client Component; recibe `review_request: Review_request`.
+- **Objetivo:** Mostrar datos precargados, editar ratings/comentario y enviar una vez.
+- **Estados/dependencias:** Editable, enviando, error por toast y enviado; componentes UI, API, Huge Icons y helpers.
+- **Personalización:** Límite de comentario, grillas y textos. El promedio siempre se deriva.
+- **Accesibilidad:** Labels visibles, datos de contacto deshabilitados, contador asociado, headings y botón bloqueado durante el request.
 
-- **Ubicación:** `offix-frontend/...`
-- **Objetivo:** Una responsabilidad breve y concreta.
-- **Entorno de renderizado:** Server Component o Client Component, incluida la razón para utilizar renderizado del cliente.
-- **Interfaz:** Props, callbacks emitidos y tipos relevantes.
-- **Estados y variantes:** Carga, vacío, éxito, error, deshabilitado, responsivo y variantes visuales aprobadas.
-- **Dependencias:** Componentes del proyecto y componentes externos aprobados.
-- **Cómo personalizarlo:** Contenido, apariencia, comportamiento y restricciones, indicando archivos o props concretos.
-- **Accesibilidad:** Labels, semántica, foco, comportamiento del teclado y anuncios, cuando corresponda.
-```
+### `Review_rating_field`
 
-## Estado de las integraciones
+- **Ubicación:** `src/features/reviews/components/review_rating_field.tsx`.
+- **Entorno e interfaz:** Client Component; `description`, `label`, `rating`, `on_change`.
+- **Objetivo:** Categoría, ayuda, estrellas, valor y etiqueta cualitativa.
+- **Estados/dependencias:** `0.5` a `5` en pasos de `0.5`; `Rating` y `get_rating_label`.
+- **Personalización:** Contenido en `rating_categories.ts`, apariencia mediante tokens.
 
-| Integración | Responsable previsto | Estado actual del frontend |
-| --- | --- | --- |
-| API REST de FastAPI en Render | Backend | Contrato y URL base sin configurar |
-| PostgreSQL mediante Supabase | Solamente backend | Sin conexión directa desde el frontend, según lo requerido |
-| Entrega de imágenes de Cloudflare | Frontend para lecturas aprobadas de la CDN | Host y reglas de entrega sin configurar |
-| Confirmación de subidas a Cloudflare | Backend | Protocolo sin definir |
-| Contacto mediante WhatsApp | Enlace del frontend con datos aprobados del perfil | Sin implementar |
-| Notificaciones por correo electrónico | Backend o servicio externo | Disparadores y plantillas sin definir |
-| shadcn/ui | Frontend | Inicializado con Base UI; `Button` agregado localmente |
-| Sonner | Frontend | Agregado y configurado en `RootLayout` |
-| Autenticación | Backend / Frontend | Integrado mediante API REST de FastAPI con JWT y cookies |
+### `Submitted_review_card`
 
-## Requisitos pendientes de definición
+- **Ubicación:** `src/features/reviews/components/submitted_review_card.tsx`.
+- **Entorno e interfaz:** Client Component; recibe comentario, ratings, solicitud y respuesta confirmada.
+- **Objetivo:** Confirmar el envío, estado pendiente, profesional, promedio y desglose.
+- **Estados/dependencias:** Con o sin comentario; Card, Huge Icons y helpers de rating.
+- **Personalización:** `summary_columns` y textos de confirmación.
 
-La implementación debe detenerse y consultar a desarrollo cuando dependa de:
+### `Review_link_status`
 
-- La identidad y los permisos de clientes.
-- Las reglas de búsqueda, comparación, ubicación, publicación de necesidades de servicio y contratación.
-- Los límites de validación de cada campo.
-- Las restricciones de adjuntos y el protocolo de subida.
-- El flujo de verificación de matrículas profesionales.
-- Los estados de reseñas, reglas de calificación y comportamiento de moderación.
-- Los endpoints de la API, contratos de datos y transporte de autenticación.
-- El comportamiento final del hover y los colores faltantes para estados semánticos.
+- **Ubicación:** `src/features/reviews/components/review_link_status.tsx`.
+- **Entorno e interfaz:** Server compatible; `message` y `title` opcional.
+- **Objetivo:** Estado accesible y uniforme para enlaces no utilizables.
+- **Estados/dependencias:** Mensaje y título variables; Card y Huge Icons.
+- **Personalización:** Texto y ancho de la tarjeta.
 
-## Mantenimiento de la documentación
+### `Rating`
 
-- Actualizá este archivo cuando cambie un componente propio, un componente de shadcn/ui, una integración, un límite de renderizado, un flujo de datos o la estructura del proyecto.
-- Actualizá `README.md` cuando cambien la instalación, configuración de ambiente, comandos, puertos o procedimientos de QA.
-- Verificá que ambos documentos sigan siendo consistentes cada vez que modifiques alguno.
-- Describí el comportamiento actual con precisión e identificá el comportamiento planificado como previsto o no implementado.
+- **Ubicación:** `src/components/reui/rating.tsx`.
+- **Entorno e interfaz:** Client Component; valor, etiqueta ARIA, descripción, edición, máximo, callback, tamaño y clases.
+- **Objetivo:** Rating de estrellas con medios puntos y teclado.
+- **Estados/dependencias:** Editable/lectura y tamaños; ReUI, CVA y `StarIcon` de Huge Icons.
+- **Personalización:** Variantes, `--rating` y atributos del range.
+
+## Componentes shadcn/ui importados
+
+| Componente | Ruta | Uso | Documentación |
+| --- | --- | --- | --- |
+| `Button` | `src/components/ui/button.tsx` | Confirmación y acciones | [Button](https://ui.shadcn.com/docs/components/button) |
+| `Card` | `src/components/ui/card.tsx` | Datos, estados y resumen | [Card](https://ui.shadcn.com/docs/components/card) |
+| `Input` | `src/components/ui/input.tsx` | Datos precargados no editables | [Input](https://ui.shadcn.com/docs/components/input) |
+| `Label` | `src/components/ui/label.tsx` | Etiquetas de formulario | [Label](https://ui.shadcn.com/docs/components/label) |
+| `Textarea` | `src/components/ui/textarea.tsx` | Comentario opcional | [Textarea](https://ui.shadcn.com/docs/components/textarea) |
+| `Toaster` | `src/components/ui/sonner.tsx` | Errores de 5 s y éxitos de 3 s | [Sonner](https://ui.shadcn.com/docs/components/sonner) |
+
+## Integraciones
+
+| Integración | Estado |
+| --- | --- |
+| FastAPI | Activa mediante `NEXT_PUBLIC_API_URL` |
+| Perfiles profesionales | Listado y detalle públicos en `/oferentes` y `/oferentes/[id]` |
+| Solicitud de reseña | Se genera desde “Calificar” en un perfil real; Swagger continúa disponible para QA |
+| Formulario público | Implementado en `/resena/[code]`, sin login |
+| Moderación | Activa desde la campana autenticada; aceptar publica y recalcula, rechazar no publica ni suma al promedio |
+| Auth0/Google | Integración de `main` preservada |
+| PostgreSQL/Supabase | Sólo backend; sin conexión frontend |
+| Email/WhatsApp | Backend genera/envía; el frontend sólo consume el enlace recibido |
+
+## Mantenimiento
+
+Actualizá este archivo cuando cambie una ruta, componente, integración o límite de renderizado. Actualizá también `README.md` cuando cambien configuración, comandos, puertos o pasos de QA.

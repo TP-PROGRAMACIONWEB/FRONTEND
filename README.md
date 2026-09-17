@@ -1,255 +1,110 @@
 # Frontend de OFFIX
 
-OFFIX es una plataforma web pensada para conectar clientes de una localidad con profesionales de distintos oficios. Este repositorio contiene la aplicación frontend inicial.
+OFFIX conecta clientes con profesionales de distintos oficios. La aplicación Next.js se encuentra en `offix-frontend/`; ejecutá desde esa carpeta todos los comandos de pnpm.
 
-Este README es una guía operativa para QA y demás colaboradores técnicos que necesiten instalar, configurar, ejecutar o verificar la aplicación sin modificar código. La arquitectura y los componentes se encuentran en [DOCUMENTATION.md](./DOCUMENTATION.md), mientras que las reglas de implementación están definidas en [AGENTS.md](./AGENTS.md).
+La arquitectura y el catálogo de componentes se documentan en [DOCUMENTATION.md](./DOCUMENTATION.md). Las reglas de desarrollo están en [AGENTS.md](./AGENTS.md).
 
-## Ubicación del proyecto
+## Requisitos
 
-La aplicación de Next.js está ubicada en:
+- Node.js 20.9 o posterior; se recomienda Node.js 24 LTS.
+- pnpm 12.4.1, administrado mediante Corepack incluido con Node.js.
+- Backend de OFFIX disponible para autenticación y reseñas.
 
-```text
-offix-frontend/
-```
+No uses npm, Yarn ni Bun para instalar dependencias.
 
-Ejecutá los comandos del frontend desde esa carpeta.
-
-## Requisitos previos
-
-- Node.js 24 LTS recomendado. Next.js requiere Node.js `20.9` o posterior.
-- pnpm `12.4.1`, de acuerdo con el campo `packageManager` de `package.json`.
-- Git.
-
-Verificá que las herramientas estén instaladas:
-
-```bash
-node --version
-pnpm --version
-git --version
-```
-
-Si usás Windows, tenés Node.js 24 instalado y todavía no contás con pnpm:
-
-```powershell
-npm install --global pnpm@12.4.1
-```
-
-No uses npm, Yarn ni Bun para instalar las dependencias del proyecto.
-
-## Dependencias actuales del frontend
-
-El proyecto ya declara sus dependencias en `offix-frontend/package.json`.
-
-### Dependencias de ejecución
-
-- `next`: framework de la aplicación.
-- `react`: biblioteca para construir la interfaz.
-- `react-dom`: integración de React con el navegador y el renderizado de Next.js.
-- `@base-ui/react`: primitivas accesibles utilizadas por los componentes de shadcn/ui seleccionados.
-- `class-variance-authority`: definición de variantes de componentes.
-- `cn`: composición de nombres de clases.
-- `lucide-react`: biblioteca de íconos configurada por shadcn/ui.
-- `shadcn` y `tw-animate-css`: estilos y utilidades requeridos por la configuración actual de shadcn/ui.
-
-### Dependencias de desarrollo
-
-- `typescript`: tipado estático.
-- `tailwindcss` y `@tailwindcss/postcss`: estilos y procesamiento de CSS.
-- `eslint` y `eslint-config-next`: análisis estático del código.
-- `@types/node`, `@types/react` y `@types/react-dom`: definiciones de tipos.
-
-shadcn/ui ya está inicializado con Base UI y el componente `Button` está disponible localmente. Sonner forma parte del stack aprobado, pero todavía no está agregado.
-
-## Agregar y usar componentes de shadcn/ui
-
-shadcn/ui no funciona como una biblioteca tradicional desde la que se importan todos los componentes. Su CLI copia el código fuente de cada componente dentro del proyecto, normalmente en `src/components/ui/`. Esto permite revisar y personalizar el componente localmente.
-
-### Inicializar shadcn/ui en el proyecto existente
-
-Este paso ya fue realizado en OFFIX y no debe repetirse mientras exista `offix-frontend/components.json`. En otro checkout donde todavía no esté inicializado, se realiza una sola vez desde la raíz del repositorio:
+## Instalación
 
 ```bash
 cd offix-frontend
-pnpm dlx shadcn@latest init
+corepack pnpm install --frozen-lockfile
 ```
 
-Ejecutá `init` desde `offix-frontend/`. No uses una opción de creación de proyecto, como `--template`, ni indiques un nombre nuevo, porque eso generaría otra aplicación Next.js en lugar de configurar OFFIX.
+En Windows, usá `corepack pnpm` si PowerShell informa que `pnpm` no se reconoce. No cambió el script del proyecto: Corepack solamente ejecuta la versión `12.4.1` declarada en `package.json` sin depender de una instalación global.
 
-Antes de aceptar cambios de tema, colores o dependencias sugeridos por el asistente de configuración, comprobá que respeten el sistema de diseño y las reglas de `AGENTS.md`.
+El frontend usa Next.js, React, TypeScript, Tailwind CSS, primitivas Base UI para los componentes locales de shadcn/ui, Sonner, ReUI Rating y Huge Icons. `package.json` y `pnpm-lock.yaml` son la fuente de verdad de las versiones.
 
-### Agregar un componente mediante la terminal
+## Variables de entorno
 
-La CLI es la opción recomendada porque copia el componente, instala solamente sus dependencias requeridas y respeta las rutas configuradas en `components.json`.
+Copiá `offix-frontend/.env.example` como `offix-frontend/.env.local` y configurá:
 
-El componente `Button` ya está agregado. Este es el comando que se utilizaría para recuperarlo o agregarlo en otro checkout inicializado:
-
-```bash
-pnpm dlx shadcn@latest add button
+```dotenv
+NEXT_PUBLIC_API_URL=http://localhost:8000/api/v1
 ```
 
-Ejemplos de componentes que todavía pueden agregarse cuando una funcionalidad aprobada los necesite:
+`NEXT_PUBLIC_API_URL` es pública porque el navegador la utiliza para enviar la reseña y comenzar el login. No agregues secretos al frontend ni los prefijes con `NEXT_PUBLIC_`.
 
-```bash
-pnpm dlx shadcn@latest add input
-pnpm dlx shadcn@latest add card
-pnpm dlx shadcn@latest add sonner
-```
+## Desarrollo
 
-Agregá únicamente los componentes necesarios para una funcionalidad aprobada. No instales todos los componentes de manera preventiva.
-
-### Importar el componente en el código
-
-Después de agregarlo, sí podés importarlo normalmente. El import apunta al archivo local generado:
-
-```tsx
-import { Button } from "@/components/ui/button";
-
-export function Example_button() {
-  return <Button>Guardar</Button>;
-}
-```
-
-No utilices este import:
-
-```tsx
-import { Button } from "shadcn/ui";
-```
-
-Ese paquete no funciona como un catálogo de componentes de ejecución. Los componentes pasan a formar parte del código fuente de OFFIX.
-
-Para Sonner, primero agregá el componente con la CLI y luego importá el `Toaster` local en el layout:
-
-```tsx
-import { Toaster } from "@/components/ui/sonner";
-```
-
-Los mensajes se disparan desde un Client Component mediante la dependencia `sonner` que instala el componente:
-
-```tsx
-import { toast } from "sonner";
-
-toast.success("Los cambios se guardaron correctamente");
-```
-
-### Instalación manual
-
-No es obligatorio usar la consola para copiar un componente. También podés seguir la opción **Manual** de la documentación oficial, crear el archivo dentro de `src/components/ui/`, copiar su código e instalar cada dependencia requerida.
-
-La instalación manual es más propensa a dejar dependencias, imports o variables CSS sin configurar. Por eso, en OFFIX se recomienda utilizar la CLI y revisar el código generado antes de confirmarlo.
-
-Consultá la [instalación oficial para Next.js](https://ui.shadcn.com/docs/installation/next) y el [catálogo oficial de componentes](https://ui.shadcn.com/docs/components).
-
-## Instalar las dependencias
-
-No es necesario instalar cada paquete por separado. Desde la raíz del repositorio ejecutá:
+Levantá primero el backend en el puerto 8000. Después ejecutá:
 
 ```bash
 cd offix-frontend
-pnpm install
+corepack pnpm dev
 ```
 
-`pnpm install` lee `package.json`, instala tanto las dependencias de ejecución como las de desarrollo y utiliza las versiones bloqueadas en `pnpm-lock.yaml`.
+Abrí [http://localhost:3000](http://localhost:3000). La documentación interactiva del backend se encuentra en [http://localhost:8000/docs](http://localhost:8000/docs).
 
-Para QA, integración continua o una instalación que deba respetar el archivo de bloqueo sin modificarlo, usá:
+## Comandos
 
-```bash
-cd offix-frontend
-pnpm install --frozen-lockfile
-```
-
-Al terminar, verificá la instalación:
-
-```bash
-pnpm lint
-pnpm dev
-```
-
-Las fuentes de verdad para las dependencias son `offix-frontend/package.json` y `offix-frontend/pnpm-lock.yaml`. `requirements.txt` pertenece al ecosistema de Python y no puede instalar paquetes de Next.js; en este repositorio funciona únicamente como una aclaración para evitar ejecutar `pip install` por error.
-
-## Configurar las variables de entorno
-
-Actualmente, la aplicación utiliza variables de entorno (por ejemplo, `NEXT_PUBLIC_API_URL` para la integración con el backend).
-
-Para gestionar la configuración:
-
-1. Los nombres de las variables requeridas deberán agregarse a un archivo `.env.example` versionado, con valores vacíos o ejemplos seguros.
-2. Los valores locales deberán guardarse en `offix-frontend/.env.local`.
-3. Los valores secretos no deberán usar el prefijo `NEXT_PUBLIC_`, porque ese prefijo los expone al navegador.
-4. Las URLs reales, credenciales y tokens nunca deberán subirse al repositorio.
-
-Pedile al equipo de desarrollo los valores aprobados para cada ambiente. No inventes endpoints ni reutilices secretos de producción en ambientes locales o de QA.
-
-## Levantar la aplicación en desarrollo
-
-```bash
-cd offix-frontend
-pnpm dev
-```
-
-Abrí [http://localhost:3000](http://localhost:3000).
-
-El servidor de desarrollo recarga la página cuando cambia el código fuente. Para detenerlo, presioná `Ctrl+C`.
-
-## Comandos disponibles
-
-Ejecutá estos comandos desde `offix-frontend/`:
-
-| Comando | Para qué sirve |
+| Comando | Uso |
 | --- | --- |
-| `pnpm dev` | Levanta el servidor local de desarrollo |
-| `pnpm lint` | Ejecuta las verificaciones de ESLint |
-| `pnpm build` | Genera y valida una compilación de producción |
-| `pnpm start` | Sirve una compilación de producción existente |
+| `corepack pnpm dev` | Levanta el frontend en desarrollo |
+| `corepack pnpm lint` | Ejecuta ESLint |
+| `corepack pnpm build` | Compila y valida producción |
+| `corepack pnpm start` | Sirve una compilación ya generada |
 
-## Probar localmente la versión de producción
+## Verificación de reseñas para QA
 
-Usá esta secuencia:
+La navegación pública `/oferentes` muestra los profesionales reales del backend. Cada detalle `/oferentes/{id}` incluye `Calificar`; no requiere iniciar sesión. Swagger sigue disponible como alternativa de QA.
 
-```bash
-cd offix-frontend
-pnpm build
-pnpm start
-```
+1. Abrí `http://localhost:3000/oferentes`, elegí un profesional, presioná `Calificar` y cargá el nombre del cliente junto con al menos un teléfono o correo válido.
+2. Si cargaste teléfono, compartí la invitación mediante WhatsApp. Si cargaste correo, el backend envía el enlace al confirmar.
+3. Como alternativa de QA, ejecutá en Swagger `POST /api/v1/oferentes/{oferente_id}/solicitudes-resena` con un oferente existente y abrí el `url_resena` devuelto.
+4. Verificá que nombre, teléfono y correo provengan del backend, se vean en morado y no sean editables.
+5. Modificá las cuatro puntuaciones en pasos de `0.5`; comprobá el promedio y las etiquetas.
+6. Ingresá, si querés, un comentario de hasta 200 caracteres.
+7. Confirmá una sola vez. Debe aparecer el resumen y el backend debe dejar la reseña en `Pendiente_Aceptacion`.
+8. Iniciá sesión como el oferente calificado, abrí la campana y verificá que la solicitud aparezca solamente en su bandeja.
+9. Aceptá la reseña y comprobá que se publique y actualice el promedio. Si la rechazás, no se publica ni participa del promedio; el rechazo no resta puntos por sí mismo.
+10. Volvé a abrir el mismo enlace: debe informar que ya fue utilizado.
+11. Probá además un código inexistente y verificá el estado de enlace no disponible.
 
-Abrí [http://localhost:3000](http://localhost:3000). Para detener el servidor, presioná `Ctrl+C`.
+El listado, el perfil y el formulario de reseña son públicos. Los errores usan toasts de 5 segundos y los éxitos de 3 segundos.
 
-## Verificación rápida para QA
+## Verificación de autenticación
 
-Antes de comenzar las pruebas funcionales:
+- `/login` inicia el flujo delegado al backend mediante Google/Auth0.
+- `/api/auth/callback` y `/api/auth/logout` conservan el comportamiento incorporado desde `main`.
+- `/` consulta `/auth/me` cuando existe la cookie `access_token`.
+- La campana consulta la bandeja al cargar y cada vez que se abre. No utiliza notificaciones push ni sondeo en segundo plano.
+- `/api/reviews/notifications` y `/api/reviews/{review_id}/moderate` reenvían las operaciones protegidas desde el servidor de Next.js sin exponer la cookie `HttpOnly`.
 
-1. Ejecutá `pnpm install --frozen-lockfile`.
-2. Ejecutá `pnpm lint`.
-3. Ejecutá `pnpm build`.
-4. Levantá el servidor correspondiente.
-5. Confirmá que la terminal muestre la URL local esperada y que no existan errores de compilación.
+La integración de reseñas reutiliza la sesión existente sin modificar el login, callback ni logout.
 
-Actualmente, la ruta principal no contiene una interfaz visible del producto. Sin embargo, ya se ha configurado la integración inicial con el backend para los flujos de autenticación, la tipografía (Montserrat) y las notificaciones con Sonner. El resto de los flujos funcionales continúan en desarrollo.
-
-## Resolución de problemas
-
-### La terminal no reconoce `pnpm`
-
-Cerrá y volvé a abrir la terminal después de instalar pnpm. Luego ejecutá:
-
-```powershell
-where.exe pnpm.*
-pnpm --version
-```
+## Problemas frecuentes
 
 ### El puerto 3000 está ocupado
 
-Detené el otro proceso de desarrollo con `Ctrl+C`. Si Next.js selecciona automáticamente otro puerto, usá la URL que aparezca en la terminal.
+Detené el otro servidor con `Ctrl+C`. No pruebes el enlace en otro puerto sin cambiar también la configuración del backend, porque `url_resena` se genera con la URL base configurada allí.
 
-### Las dependencias parecen inconsistentes
+### Swagger muestra `Failed to fetch`
 
-Confirmá que estés ejecutando los comandos dentro de `offix-frontend/` y reinstalá las dependencias desde el archivo de bloqueo:
+Abrilo como `http://localhost:8000/docs`. Mezclar `127.0.0.1` y `localhost` produce orígenes diferentes para CORS.
+
+### Next.js informa un filesystem lento
+
+Es una advertencia de rendimiento del modo desarrollo, no un error funcional. En Windows puede aparecer cuando el proyecto está en una unidad lenta o sincronizada.
+
+### Aparece un hydration mismatch con `data-scribe-recorder-ready`
+
+Ese atributo lo inyecta una extensión del navegador. Desactivala para `localhost` o probá en incógnito; no proviene del HTML de OFFIX.
+
+## Verificación antes de entregar
 
 ```bash
-pnpm install --frozen-lockfile
+cd offix-frontend
+corepack pnpm lint
+corepack pnpm build
 ```
 
-No elimines `pnpm-lock.yaml` ni cambies de gestor de paquetes como solución rápida.
-
-### La compilación se comporta distinto al modo de desarrollo
-
-Ejecutá `pnpm build` para reproducir las verificaciones de producción. Al informar el problema, incluí el error completo, la ruta afectada, el navegador utilizado y los pasos para reproducirlo. No incluyas credenciales ni datos personales de usuarios.
+No se mantiene una suite automatizada permanente en este repositorio.

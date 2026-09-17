@@ -1,23 +1,28 @@
 import type { Metadata } from "next";
-import { Montserrat, Geist } from "next/font/google";
+import { Montserrat, Raleway } from "next/font/google";
 import "./globals.css";
-import { cn } from "@/lib/utils";
 
-import { Toaster } from "sonner";
-
-const geist = Geist({ subsets: ['latin'], variable: '--font-sans' });
+import { Toaster } from "@/components/ui/sonner";
 
 const montserrat = Montserrat({
   subsets: ["latin"],
   variable: "--font-montserrat",
+  weight: ["600", "800"],
+  display: "swap",
+});
+
+const raleway = Raleway({
+  subsets: ["latin"],
+  variable: "--font-raleway",
+  weight: "400",
   display: "swap",
 });
 
 export const metadata: Metadata = {
   title: "OFFIX",
-  description: "Plataforma de oficios",
+  description: "Plataforma para conectar clientes con profesionales de oficios.",
   icons: {
-    icon: '/logos/logo-simple-blanco.png',
+    icon: "/logos/logo-simple-blanco.png",
   },
 };
 
@@ -27,7 +32,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="es" className={cn("font-sans", geist.variable)}>
+    <html lang="es" className={`${montserrat.variable} ${raleway.variable}`}>
       <body>
         {children}
         <Toaster />
