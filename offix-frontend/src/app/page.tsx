@@ -1,63 +1,34 @@
-import { cookies } from 'next/headers';
 import Image from 'next/image';
 import Link from 'next/link';
+import { CheckmarkBadge01Icon } from 'hugeicons-react';
 
 import { Dashboard_controls } from '@/features/navigation/components/dashboard_controls';
 import { is_review_notification } from '@/features/reviews/api/review_notifications';
 import type { Review_notification } from '@/features/reviews/types/review';
-
-type User_profile = {
-  id_usuario: number;
-  email: string;
-  nombre: string | null;
-  rol: string;
-};
-
-function is_user_profile(value: unknown): value is User_profile {
-  if (typeof value !== 'object' || value === null) return false;
-
-  const profile = value as Record<string, unknown>;
-  return (
-    typeof profile.id_usuario === 'number' &&
-    typeof profile.email === 'string' &&
-    (typeof profile.nombre === 'string' || profile.nombre === null) &&
-    typeof profile.rol === 'string'
-  );
-}
+import { get_current_user, professional_has_valid_license } from '@/lib/session';
+import { request_authenticated_backend } from '@/lib/authenticated_backend';
 
 export default async function Home() {
-  const cookieStore = await cookies();
-  const token = cookieStore.get('access_token')?.value;
+  const user = await get_current_user();
 
-  let user: User_profile | null = null;
   let initial_notifications: Review_notification[] = [];
+  let has_validated_license = false;
 
-  if (token) {
+  if (user) {
     try {
-      const request_options = {
-        headers: { Authorization: `Bearer ${token}` },
-        cache: 'no-store' as const,
-      };
-      const [res, notifications_res] = await Promise.all([
-        fetch(`${process.env.NEXT_PUBLIC_API_URL}/auth/me`, request_options),
-        fetch(`${process.env.NEXT_PUBLIC_API_URL}/notificaciones`, request_options),
-      ]);
-
-      if (res.ok) {
-        const profile: unknown = await res.json();
-        if (is_user_profile(profile)) user = profile;
-      } else {
-        console.warn("Invalid token or backend error:", res.status);
-      }
-
-      if (notifications_res.ok) {
+      const notifications_res = await request_authenticated_backend('/notificaciones');
+      if (notifications_res && notifications_res.ok) {
         const notifications: unknown = await notifications_res.json();
         if (Array.isArray(notifications) && notifications.every(is_review_notification)) {
           initial_notifications = notifications;
         }
       }
     } catch (error) {
-      console.error("Failed to fetch user profile:", error);
+      console.error("Failed to fetch notifications:", error);
+    }
+
+    if (user.rol === 'Oferente') {
+      has_validated_license = await professional_has_valid_license();
     }
   }
 
@@ -109,8 +80,10 @@ export default async function Home() {
         </div>
 
         <Dashboard_controls
+          has_validated_license={has_validated_license}
           initial_notifications={initial_notifications}
           profile_name={user.nombre || user.email}
+          user_role={user.rol}
         />
       </header>
 
@@ -129,7 +102,18 @@ export default async function Home() {
               </div>
 
               <div className="space-y-1">
-                <p className="text-lg text-background">{user.nombre}</p>
+                <div className="flex items-center justify-center gap-1.5">
+                  <p className="text-lg text-background">{user.nombre}</p>
+                  {has_validated_license && (
+                    <span
+                      aria-label="Matrícula profesional verificada"
+                      className="inline-flex shrink-0 items-center text-primary-foreground"
+                      title="Matrícula profesional verificada"
+                    >
+                      <CheckmarkBadge01Icon className="size-5 fill-emerald-500 text-foreground" />
+                    </span>
+                  )}
+                </div>
                 <p className="text-sm text-background">{user.email}</p>
                 <p className="mt-2 text-xs text-background/70">Rol: {user.rol}</p>
               </div>

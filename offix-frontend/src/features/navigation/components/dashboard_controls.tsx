@@ -2,6 +2,8 @@
 
 import {
   Cancel01Icon,
+  Certificate01Icon,
+  CheckmarkBadge01Icon,
   Logout01Icon,
   Menu01Icon,
   Search01Icon,
@@ -17,6 +19,8 @@ import type { Review_notification } from "@/features/reviews/types/review"
 type Dashboard_controls_props = {
   initial_notifications: Review_notification[]
   profile_name: string
+  user_role?: string
+  has_validated_license?: boolean
 }
 
 type Open_panel = "menu" | "notifications" | null
@@ -24,6 +28,8 @@ type Open_panel = "menu" | "notifications" | null
 export function Dashboard_controls({
   initial_notifications,
   profile_name,
+  user_role,
+  has_validated_license = false,
 }: Dashboard_controls_props) {
   const [open_panel, set_open_panel] = useState<Open_panel>(null)
 
@@ -81,7 +87,18 @@ export function Dashboard_controls({
               <UserCircleIcon className="size-8 shrink-0" aria-hidden="true" />
               <div className="min-w-0">
                 <p className="text-xs text-background/70">Perfil</p>
-                <h2 className="truncate font-heading text-lg font-extrabold">{profile_name}</h2>
+                <div className="flex items-center gap-1.5">
+                  <h2 className="truncate font-heading text-lg font-extrabold">{profile_name}</h2>
+                  {has_validated_license && (
+                    <span
+                      aria-label="Matrícula profesional verificada"
+                      className="inline-flex shrink-0 items-center text-primary-foreground"
+                      title="Matrícula profesional verificada"
+                    >
+                      <CheckmarkBadge01Icon className="size-5 fill-emerald-500 text-foreground" />
+                    </span>
+                  )}
+                </div>
               </div>
             </div>
             <Button
@@ -111,6 +128,20 @@ export function Dashboard_controls({
                 <span className="block text-xs text-muted-foreground">(test)</span>
               </span>
             </Link>
+
+            {user_role === "Oferente" && !has_validated_license && (
+              <Link
+                className="mt-2 flex items-center gap-3 rounded-xl bg-background px-4 py-3 transition-colors hover:bg-muted focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
+                href="/validar-matricula"
+                onClick={close_panels}
+              >
+                <Certificate01Icon className="size-5 shrink-0" aria-hidden="true" />
+                <span>
+                  <span className="block font-heading font-semibold">Validar matrícula</span>
+                  <span className="block text-xs text-muted-foreground">Fidelizá tu oficio</span>
+                </span>
+              </Link>
+            )}
           </nav>
 
           <footer className="p-4 sm:p-5">
