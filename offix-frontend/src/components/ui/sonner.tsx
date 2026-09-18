@@ -21,11 +21,45 @@ const success_toast_duration = 3000
 type Toast_options = Omit<ExternalToast, "duration">
 
 function show_error_toast(message: ReactNode, options?: Toast_options) {
-  return toast.error(message, { ...options, duration: error_toast_duration })
+  return toast.error(message, {
+    ...options,
+    duration: error_toast_duration,
+    position: "top-right",
+    style: {
+      background: "#EF4444",
+      color: "#F0F4EF",
+      border: "1px solid #B91C1C",
+      ...options?.style,
+    },
+  })
 }
 
 function show_success_toast(message: ReactNode, options?: Toast_options) {
-  return toast.success(message, { ...options, duration: success_toast_duration })
+  return toast.success(message, {
+    ...options,
+    duration: success_toast_duration,
+    position: "top-right",
+    style: {
+      background: "#10B981",
+      color: "#F0F4EF",
+      border: "1px solid #047857",
+      ...options?.style,
+    },
+  })
+}
+
+function show_info_toast(message: ReactNode, options?: Toast_options) {
+  return toast.info(message, {
+    ...options,
+    duration: success_toast_duration,
+    position: "top-right",
+    style: {
+      background: "#3B82F6",
+      color: "#F0F4EF",
+      border: "1px solid #1D4ED8",
+      ...options?.style,
+    },
+  })
 }
 
 const Toaster = ({ ...props }: ToasterProps) => {
@@ -60,4 +94,4 @@ const Toaster = ({ ...props }: ToasterProps) => {
   )
 }
 
-export { Toaster, show_error_toast, show_success_toast }
+export { Toaster, show_error_toast, show_success_toast, show_info_toast }
