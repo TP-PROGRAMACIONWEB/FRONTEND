@@ -52,9 +52,11 @@ offix-frontend/src/
 ├── app/
 │   ├── (auth)/login/
 │   ├── api/auth/{callback,logout}/
+│   ├── api/matriculas/validar/route.ts
 │   ├── api/reviews/{notifications,[review_id]/moderate}/
 │   ├── oferentes/{page.tsx,[id]/page.tsx}
 │   ├── resena/[code]/page.tsx
+│   ├── validar-matricula/{page.tsx,components/license_validation_form.tsx}
 │   ├── globals.css
 │   ├── layout.tsx
 │   └── page.tsx
@@ -99,15 +101,15 @@ Montserrat `800` se usa en títulos y Raleway `400` en cuerpo. Los íconos funci
 
 - **Ubicación:** `src/app/page.tsx`.
 - **Entorno e interfaz:** Server Component sin props.
-- **Objetivo:** Lee la cookie de acceso, consulta `/auth/me` y muestra acceso o perfil. En sesión válida delega la campana y el menú lateral a `Dashboard_controls`.
-- **Estados/dependencias:** Sin sesión, sesión válida o backend inaccesible; `cookies`, `fetch`, `Link`, `Image` y `Dashboard_controls`. El acceso público al listado permanece disponible sin sesión.
+- **Objetivo:** Lee la cookie de acceso, consulta `/auth/me` y, si el usuario tiene rol `Oferente`, consulta `/oferentes/me/matriculas` para determinar si posee matrícula validada activa. En sesión válida delega la campana, el menú lateral, el rol y el estado de matrícula a `Dashboard_controls`, y exhibe la insignia de verificado en la tarjeta de perfil si corresponde.
+- **Estados/dependencias:** Sin sesión, sesión válida o backend inaccesible; `cookies`, `fetch`, `Link`, `Image`, `CheckmarkBadge01Icon` y `Dashboard_controls`. El acceso público al listado permanece disponible sin sesión.
 - **Personalización:** Sólo presentación; no cambiar transporte o validación de sesión desde componentes visuales.
 
 ### `Dashboard_controls`
 
 - **Ubicación:** `src/features/navigation/components/dashboard_controls.tsx`.
-- **Entorno e interfaz:** Client Component; recibe `profile_name: string`.
-- **Objetivo:** Reemplazar el logout directo del header por la campana y el menú hamburguesa. El menú se abre desde la derecha, muestra el nombre del perfil, enlaza a `Ver oferentes` con la marca `(test)` y mantiene `Cerrar sesión` al pie.
+- **Entorno e interfaz:** Client Component; recibe `profile_name: string`, `initial_notifications: Review_notification[]`, `user_role?: string` y `has_validated_license?: boolean`.
+- **Objetivo:** Reemplazar el logout directo del header por la campana y el menú hamburguesa. El menú se abre desde la derecha, muestra el nombre del perfil con una insignia de verificado (`CheckmarkBadge01Icon`) si `has_validated_license` es true, enlaza a `Ver oferentes`, ofrece la opción condicional `Validar matrícula` para oferentes no validados y mantiene `Cerrar sesión` al pie.
 - **Estados/dependencias:** Ningún panel, notificaciones o menú abierto; `Button`, `Link`, Huge Icons y `Review_notifications_panel`.
 - **Personalización:** Secciones futuras del menú y ancho responsive. El panel móvil no supera el 82 % del viewport.
 - **Accesibilidad:** Botones con nombre, `aria-expanded`, cierre por fondo o tecla Escape y paneles rotulados como diálogo.
@@ -204,13 +206,29 @@ Montserrat `800` se usa en títulos y Raleway `400` en cuerpo. Los íconos funci
 - **Estados/dependencias:** Editable/lectura y tamaños; ReUI, CVA y `StarIcon` de Huge Icons.
 - **Personalización:** Variantes, `--rating` y atributos del range.
 
+### `Validar_matricula_page`
+
+- **Ubicación:** `src/app/validar-matricula/page.tsx`.
+- **Entorno e interfaz:** Server Component dinámico sin props.
+- **Objetivo:** Proteger el acceso a la validación de matrícula: exige sesión activa (`access_token`), rol `Oferente`, y verifica que no posea ya una matrícula activa en `/oferentes/me/matriculas` (en cuyo caso redirige al inicio). Renderiza el contenedor de la tarjeta de validación con `License_validation_form`.
+- **Estados/dependencias:** Redirección no autenticada (`/login`), redirección no oferente o ya validado (`/`), presentación con `License_validation_form`, `Image`, `Link` y Huge Icons.
+- **Personalización:** Presentación, textos y encabezado.
+
+### `License_validation_form`
+
+- **Ubicación:** `src/app/validar-matricula/components/license_validation_form.tsx`.
+- **Entorno e interfaz:** Client Component sin props.
+- **Objetivo:** Gestionar el formulario de validación de matrícula según las reglas del padrón: selector de oficio (`Aire acondicionado` con 8 dígitos o `Gasista` con 10 dígitos), input numérico con conteo de dígitos en vivo, bloqueo del botón hasta cumplir la longitud exacta, envío seguro al Route Handler `/api/matriculas/validar`, feedback con toasts de Sonner (3s para éxito, 5s para errores) y refresco/redirección automática tras validar.
+- **Estados/dependencias:** Tipo de oficio, número ingresado, estado enviando/cargando (`is_submitting`), toasts de Sonner, `useRouter`, `Input`, `Label`, `Button` y Huge Icons.
+- **Accesibilidad:** Labels asociados, atributos `inputMode="numeric"`, `maxLength`, `aria-busy`, `aria-describedby` y botón deshabilitado durante peticiones.
+
 ## Componentes shadcn/ui importados
 
 | Componente | Ruta | Uso | Documentación |
 | --- | --- | --- | --- |
 | `Button` | `src/components/ui/button.tsx` | Confirmación y acciones | [Button](https://ui.shadcn.com/docs/components/button) |
 | `Card` | `src/components/ui/card.tsx` | Datos, estados y resumen | [Card](https://ui.shadcn.com/docs/components/card) |
-| `Input` | `src/components/ui/input.tsx` | Datos precargados no editables | [Input](https://ui.shadcn.com/docs/components/input) |
+| `Input` | `src/components/ui/input.tsx` | Datos precargados y formulario de matrícula | [Input](https://ui.shadcn.com/docs/components/input) |
 | `Label` | `src/components/ui/label.tsx` | Etiquetas de formulario | [Label](https://ui.shadcn.com/docs/components/label) |
 | `Textarea` | `src/components/ui/textarea.tsx` | Comentario opcional | [Textarea](https://ui.shadcn.com/docs/components/textarea) |
 | `Toaster` | `src/components/ui/sonner.tsx` | Errores de 5 s y éxitos de 3 s | [Sonner](https://ui.shadcn.com/docs/components/sonner) |
@@ -221,6 +239,7 @@ Montserrat `800` se usa en títulos y Raleway `400` en cuerpo. Los íconos funci
 | --- | --- |
 | FastAPI | Activa mediante `NEXT_PUBLIC_API_URL` |
 | Perfiles profesionales | Listado y detalle públicos en `/oferentes` y `/oferentes/[id]` |
+| Validación de matrícula | Activa en `/validar-matricula` mediante `/api/matriculas/validar` contra `/oferentes/me/matriculas/validaciones` (HU-02) |
 | Solicitud de reseña | Se genera desde “Calificar” en un perfil real; Swagger continúa disponible para QA |
 | Formulario público | Implementado en `/resena/[code]`, sin login |
 | Moderación | Activa desde la campana autenticada; aceptar publica y recalcula, rechazar no publica ni suma al promedio |
