@@ -75,11 +75,29 @@ El listado, el perfil y el formulario de reseña son públicos. Los errores usan
 
 - `/login` inicia el flujo delegado al backend mediante Google/Auth0.
 - `/api/auth/callback` y `/api/auth/logout` conservan el comportamiento incorporado desde `main`.
-- `/` consulta `/auth/me` cuando existe la cookie `access_token`.
+- `/` consulta `/auth/me` cuando existe la cookie `access_token` y, si el rol es `Oferente`, consulta `/oferentes/me/matriculas` para determinar si posee matrícula validada activa.
 - La campana consulta la bandeja al cargar y cada vez que se abre. No utiliza notificaciones push ni sondeo en segundo plano.
 - `/api/reviews/notifications` y `/api/reviews/{review_id}/moderate` reenvían las operaciones protegidas desde el servidor de Next.js sin exponer la cookie `HttpOnly`.
 
 La integración de reseñas reutiliza la sesión existente sin modificar el login, callback ni logout.
+
+## Verificación de validación de matrícula (HU-02)
+
+1. Iniciá sesión con una cuenta de usuario con rol **Oferente** que no posea matrícula validada.
+2. Abrí el menú lateral (hamburguesa a la derecha del header): verificá que figure la opción **"Validar matrícula"**.
+3. Hacé clic en la opción para navegar a `/validar-matricula`.
+4. Comprobá el selector de oficio:
+   - **Aire acondicionado**: exige exactamente **8 dígitos** numéricos.
+   - **Gasista**: exige exactamente **10 dígitos** numéricos.
+5. Verificá que el botón **Confirmar validación** permanezca deshabilitado hasta que el número contenga la cantidad exacta de dígitos.
+6. **Casos de prueba para QA:**
+   - **Timeout simulado (CA03):** ingresá la matrícula trampa `9999999999` para Gasista o `99999999` para Aire acondicionado. Verificá el toast de error por 5 segundos.
+   - **No encontrada en el padrón (CA04):** ingresá un número inexistente (ej. `12345678` en Aire acondicionado). Verificá el toast de error por 5 segundos.
+   - **Validación exitosa (CA05):** ingresá un número válido del padrón oficial que coincida con el nombre del oferente autenticado. Verificá el toast de éxito por 3 segundos y la redirección automática al inicio (`/`).
+7. **Estado reactivo y distintivo verificado:**
+   - En el inicio (`/`), comprobá que la tarjeta de perfil muestre la insignia de verificado junto al nombre.
+   - Abrí el menú lateral: verificá que la opción **"Validar matrícula"** haya desaparecido y que el nombre del perfil exhiba también la insignia de verificado.
+   - Intentá ingresar manualmente a `/validar-matricula`: la página debe redirigir automáticamente a `/` al detectar la matrícula activa.
 
 ## Problemas frecuentes
 
