@@ -8,6 +8,8 @@ import type { Review_notification } from '@/features/reviews/types/review';
 import { get_current_user, professional_has_valid_license } from '@/lib/session';
 import { request_authenticated_backend } from '@/lib/authenticated_backend';
 
+export const dynamic = 'force-dynamic';
+
 export default async function Home() {
   const user = await get_current_user();
 
