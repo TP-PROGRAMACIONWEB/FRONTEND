@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 
+import { get_api_base_url } from '@/lib/api';
+
 export async function GET(request: NextRequest) {
   const cookieStore = await cookies();
   const token = cookieStore.get('access_token')?.value;
@@ -16,7 +18,7 @@ export async function GET(request: NextRequest) {
   // We don't block the UI if it fails.
   if (token) {
     try {
-      fetch(`${process.env.NEXT_PUBLIC_API_URL}/auth/logout`, {
+      fetch(`${get_api_base_url()}/auth/logout`, {
         method: 'POST',
         headers: {
           Authorization: `Bearer ${token}`

@@ -5,5 +5,5 @@ export function get_api_base_url() {
     throw new Error("NEXT_PUBLIC_API_URL no está configurada.")
   }
 
-  return api_base_url
+  return `${api_base_url}/api/v1`
 }

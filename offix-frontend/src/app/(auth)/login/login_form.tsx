@@ -1,7 +1,9 @@
 "use client";
 
+import { get_api_base_url } from "@/lib/api";
+
 export function LoginForm() {
-  const loginUrl = `${process.env.NEXT_PUBLIC_API_URL}/auth/google/login`;
+  const loginUrl = `${get_api_base_url()}/auth/google/login`;
 
   return (
     <a
