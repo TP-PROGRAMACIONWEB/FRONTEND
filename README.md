@@ -57,17 +57,18 @@ Abrí [http://localhost:3000](http://localhost:3000). La documentación interact
 
 La navegación pública `/oferentes` muestra los profesionales reales del backend. Cada detalle `/oferentes/{id}` incluye `Calificar`; no requiere iniciar sesión. Swagger sigue disponible como alternativa de QA.
 
-1. Abrí `http://localhost:3000/oferentes`, elegí un profesional, presioná `Calificar` y cargá el nombre del cliente junto con al menos un teléfono o correo válido.
-2. Si cargaste teléfono, compartí la invitación mediante WhatsApp. Si cargaste correo, el backend envía el enlace al confirmar.
-3. Como alternativa de QA, ejecutá en Swagger `POST /api/v1/oferentes/{oferente_id}/solicitudes-resena` con un oferente existente y abrí el `url_resena` devuelto.
-4. Verificá que nombre, teléfono y correo provengan del backend, se vean en morado y no sean editables.
-5. Modificá las cuatro puntuaciones en pasos de `0.5`; comprobá el promedio y las etiquetas.
-6. Ingresá, si querés, un comentario de hasta 200 caracteres.
-7. Confirmá una sola vez. Debe aparecer el resumen y el backend debe dejar la reseña en `Pendiente_Aceptacion`.
-8. Iniciá sesión como el oferente calificado, abrí la campana y verificá que la solicitud aparezca solamente en su bandeja.
-9. Aceptá la reseña y comprobá que se publique y actualice el promedio. Si la rechazás, no se publica ni participa del promedio; el rechazo no resta puntos por sí mismo.
-10. Volvé a abrir el mismo enlace: debe informar que ya fue utilizado.
-11. Probá además un código inexistente y verificá el estado de enlace no disponible.
+1. Abrí `http://localhost:3000/oferentes`, elegí un profesional y presioná `Calificar`. El formulario se abre en un modal; al cerrarlo con la cruz, `Cancelar`, Escape o el fondo, no se genera ni envía nada.
+2. Como invitado, cargá el nombre del cliente y un correo válido terminado en `.com`, sin espacios. El backend envía el enlace al confirmar.
+3. Como usuario con rol **Oferente**, el modal también habilita el número de teléfono: ingresá 10 dígitos, con guion opcional y sin prefijos `0`, `15` ni `+54`. Al generar, WhatsApp se abre directamente y el modal se cierra.
+4. Como alternativa de QA, ejecutá en Swagger `POST /api/v1/oferentes/{oferente_id}/solicitudes-resena` con un oferente existente y abrí el `url_resena` devuelto.
+5. Verificá que nombre, teléfono y correo provengan del backend, se vean en morado y no sean editables.
+6. Modificá las cuatro puntuaciones en pasos de `0.5`; comprobá el promedio y las etiquetas.
+7. Ingresá, si querés, un comentario de hasta 200 caracteres.
+8. Confirmá una sola vez. Debe aparecer el resumen y el backend debe dejar la reseña en `Pendiente_Aceptacion`.
+9. Iniciá sesión como el oferente calificado, abrí la campana y verificá que la solicitud aparezca solamente en su bandeja.
+10. Aceptá la reseña y comprobá que se publique y actualice el promedio. Si la rechazás, no se publica ni participa del promedio; el rechazo no resta puntos por sí mismo.
+11. Volvé a abrir el mismo enlace: debe informar que ya fue utilizado.
+12. Probá además un código inexistente y verificá el estado de enlace no disponible.
 
 El listado, el perfil y el formulario de reseña son públicos. Los errores usan toasts de 5 segundos y los éxitos de 3 segundos.
 

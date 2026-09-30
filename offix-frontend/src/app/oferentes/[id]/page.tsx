@@ -15,6 +15,7 @@ import {
   get_professional_categories,
 } from "@/features/professionals/api/professionals"
 import { Review_request_button } from "@/features/reviews/components/review_request_button"
+import { get_current_user } from "@/lib/session"
 
 export const dynamic = "force-dynamic"
 
@@ -30,9 +31,10 @@ export default async function Professional_page({ params }: Professional_page_pr
     return <Profile_error message="El perfil profesional no existe." />
   }
 
-  const [professional_result, categories_result] = await Promise.all([
+  const [professional_result, categories_result, current_user] = await Promise.all([
     get_professional(professional_id),
     get_professional_categories(),
+    get_current_user(),
   ])
 
   if (!professional_result.ok) {
@@ -107,7 +109,10 @@ export default async function Professional_page({ params }: Professional_page_pr
           </section>
         )}
 
-        <Review_request_button oferente_id={professional.id_oferente} />
+        <Review_request_button
+          can_send_whatsapp={current_user?.rol === "Oferente"}
+          oferente_id={professional.id_oferente}
+        />
       </article>
     </main>
   )

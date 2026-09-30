@@ -10,19 +10,19 @@ Una persona con un enlace válido puede reseñar sin iniciar sesión. El fronten
 
 - **Stack:** Next.js App Router, React, TypeScript estricto, Tailwind CSS, componentes locales de shadcn/ui sobre Base UI, Sonner, ReUI Rating y Huge Icons.
 - **Servidor:** `/oferentes` y `/oferentes/[id]` consultan perfiles públicos reales; `src/app/resena/[code]/page.tsx` consulta el enlace y decide si renderizar el formulario o un estado no utilizable.
-- **Cliente:** `Review_request_button` genera el enlace para el oferente mostrado. `Review_form` mantiene únicamente los valores aún no enviados, evita envíos duplicados y publica la reseña con `fetch` nativo.
+- **Cliente:** `Review_request_button` abre un modal para generar el enlace desde el perfil mostrado. Los invitados sólo pueden solicitarlo por correo; para una sesión con rol `Oferente`, también habilita WhatsApp y lo abre directamente tras confirmar. `Review_form` mantiene únicamente los valores aún no enviados, evita envíos duplicados y publica la reseña con `fetch` nativo.
 - **API:** los módulos de `features/professionals` y `features/reviews` validan respuestas desconocidas y usan la URL centralizada en `src/lib/api.ts`. Las rutas servidoras `/api/reviews/notifications` y `/api/reviews/[review_id]/moderate` agregan el token guardado en la cookie `HttpOnly` antes de llamar a FastAPI.
 - **Autenticación:** `/login`, `/api/auth/callback`, `/api/auth/logout` y `/` mantienen el flujo de sesión existente. La carga de reseñas sigue siendo pública; únicamente la bandeja y la moderación requieren la sesión del oferente.
 - **Autorización:** FastAPI filtra la bandeja por `usuario_id` y valida que el oferente autenticado sea dueño de la reseña. El frontend no intenta reemplazar esas reglas con filtros visuales.
 
 ```text
-GET /oferentes --> /oferentes/{id} + Review_request_button
+GET /oferentes --> /oferentes/{id} + Review_request_button modal
                  |
                  v
 POST /oferentes/{id}/solicitudes-resena
                  |
                  v
-       email o enlace de WhatsApp
+invitado: email | Oferente: email o WhatsApp directo
                  |
                  v
 GET /solicitudes-resena/{codigo} -- no utilizable --> estado informativo
@@ -135,8 +135,8 @@ Montserrat `800` se usa en títulos y Raleway `400` en cuerpo. Los íconos funci
 
 - **Ubicación:** `src/app/oferentes/[id]/page.tsx`.
 - **Entorno e interfaz:** Server Components; la página recibe `params: Promise<{ id: string }>` y los auxiliares reciben datos presentacionales.
-- **Objetivo:** Mostrar un perfil público real, sus datos disponibles y la entrada al flujo de reseña.
-- **Estados/dependencias:** Perfil válido, ID inválido, inexistente o backend inaccesible; API de profesionales, `Review_request_button`, `Link` y Huge Icons.
+- **Objetivo:** Mostrar un perfil público real, sus datos disponibles y la entrada al flujo de reseña. Consulta la sesión para delegar al botón si el canal WhatsApp está disponible para un Oferente.
+- **Estados/dependencias:** Perfil válido, ID inválido, inexistente o backend inaccesible; API de profesionales, sesión servidor, `Review_request_button`, `Link` y Huge Icons.
 - **Personalización:** Distribución, botón `Volver a profesionales` y campos visibles aprobados; DNI/CUIT, coordenadas y datos internos no se renderizan.
 
 ### `LoginPage`, `LoginForm` y `ErrorHandler`
@@ -159,11 +159,11 @@ Montserrat `800` se usa en títulos y Raleway `400` en cuerpo. Los íconos funci
 ### `Review_request_button`
 
 - **Ubicación:** `src/features/reviews/components/review_request_button.tsx`.
-- **Entorno e interfaz:** Client Component; recibe `oferente_id: number` desde el perfil público validado.
-- **Objetivo:** Mostrar “Calificar”, validar los datos del cliente, crear la solicitud real y confirmar el envío por correo u ofrecer el enlace de WhatsApp resultante.
-- **Estados/dependencias:** Cerrado, formulario, enviando, error y enlace generado; API de reseñas, componentes UI, Sonner y Huge Icons.
+- **Entorno e interfaz:** Client Component; recibe `oferente_id: number` y `can_send_whatsapp: boolean` desde el perfil público validado y la sesión servidor.
+- **Objetivo:** Mostrar “Calificar” debajo del perfil y abrir el modal `Datos del cliente`. Valida nombre, correo y el teléfono de 10 dígitos exigido por la API. Sin sesión de Oferente sólo ofrece correo; con esa sesión habilita teléfono y abre el `whatsapp_url` devuelto directamente, sin una vista intermedia de enlace generado.
+- **Estados/dependencias:** Cerrado, modal, enviando y error; API de reseñas, componentes UI, Sonner y Huge Icons.
 - **Personalización:** Textos y distribución visual. Las reglas de contacto y el vínculo entre `id_usuario` e `id_oferente` pertenecen al contrato del backend.
-- **Accesibilidad:** Labels visibles, ayuda y errores propios asociados mediante ARIA, foco de error visible, estado deshabilitado durante el envío y enlaces identificados por texto. El formulario usa `noValidate` para reemplazar los mensajes genéricos del navegador por textos específicos en español.
+- **Accesibilidad:** Labels visibles, ayuda y errores propios asociados mediante ARIA, foco inicial en nombre, cierre por cruz, `Cancelar`, Escape o fondo, y acciones bloqueadas durante el envío. El formulario usa `noValidate` para reemplazar los mensajes genéricos del navegador por textos específicos en español.
 
 ### `Review_form`
 
