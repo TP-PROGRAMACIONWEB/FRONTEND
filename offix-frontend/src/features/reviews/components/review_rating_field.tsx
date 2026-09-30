@@ -19,10 +19,10 @@ export function Review_rating_field({
   const description_id = `rating-${label.toLowerCase()}-description`;
 
   return (
-    <div className="rounded-xl border bg-card p-4 shadow-sm">
+    <div className="rounded-xl border bg-card p-4">
       <div className="flex items-baseline justify-between gap-3">
         <h4 className="font-heading text-base">{label}</h4>
-        <output className="font-heading text-sm">{rating.toFixed(1)} / 5</output>
+        <output className="font-heading text-sm tabular-nums">{rating.toFixed(1)} / 5</output>
       </div>
       <p className="text-muted-foreground mt-1 text-sm" id={description_id}>
         {description}

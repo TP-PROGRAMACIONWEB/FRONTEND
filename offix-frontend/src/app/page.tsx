@@ -3,7 +3,9 @@ import Link from 'next/link';
 import { CheckmarkBadge01Icon } from 'hugeicons-react';
 
 import { Dashboard_controls } from '@/features/navigation/components/dashboard_controls';
+import { Application_header } from '@/features/navigation/components/application_header';
 import { is_review_notification } from '@/features/reviews/api/review_notifications';
+import { Review_request_button } from '@/features/reviews/components/review_request_button';
 import type { Review_notification } from '@/features/reviews/types/review';
 import { get_current_user, professional_has_valid_license } from '@/lib/session';
 import { request_authenticated_backend } from '@/lib/authenticated_backend';
@@ -36,8 +38,10 @@ export default async function Home() {
 
   if (!user) {
     return (
-      <div className="flex min-h-screen flex-col items-center justify-center bg-background p-4">
-        <div className="rounded-3xl bg-foreground p-8 text-center shadow-2xl">
+      <div className="flex min-h-screen flex-col bg-background">
+        <Application_header />
+        <main className="flex flex-1 items-center justify-center p-4">
+          <div className="rounded-3xl bg-foreground p-8 text-center shadow-2xl">
           <Image
             alt="OFFIX"
             className="mx-auto mb-6 h-12 w-auto"
@@ -61,33 +65,22 @@ export default async function Home() {
           >
             Ver profesionales
           </Link>
-        </div>
+          </div>
+        </main>
       </div>
     );
   }
 
   return (
     <div className="flex min-h-screen flex-col bg-background font-sans">
-      <header className="flex w-full items-center justify-between bg-foreground px-6 py-4">
-        <div className="flex items-center gap-3">
-          <Image
-            alt="OFFIX"
-            className="h-8 w-auto"
-            height={32}
-            priority
-            src="/logos/logo-simple-blanco.png"
-            width={32}
-          />
-          <span className="font-heading text-xl font-extrabold tracking-wide text-background">OFFIX</span>
-        </div>
-
+      <Application_header>
         <Dashboard_controls
           has_validated_license={has_validated_license}
           initial_notifications={initial_notifications}
           profile_name={user.nombre || user.email}
           user_role={user.rol}
         />
-      </header>
+      </Application_header>
 
       <main className="flex-1 flex items-center justify-center p-4">
         <div className="relative w-full max-w-md overflow-hidden rounded-3xl bg-foreground p-8 shadow-2xl">
@@ -120,6 +113,14 @@ export default async function Home() {
                 <p className="mt-2 text-xs text-background/70">Rol: {user.rol}</p>
               </div>
             </div>
+
+            {user.rol === 'Oferente' && (
+              <Review_request_button
+                can_send_whatsapp
+                oferente_id={user.id_usuario}
+                trigger_class_name="border border-background bg-background text-foreground hover:bg-background/85 focus-visible:ring-background/50"
+              />
+            )}
           </div>
         </div>
       </main>

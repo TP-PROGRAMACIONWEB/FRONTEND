@@ -79,13 +79,13 @@ offix-frontend/src/
 
 ## Sistema visual
 
-`globals.css` concentra los tokens: fondo lavanda `#F3F0F7`, cards y formularios `#FAF8FC`, texto y superficie fuerte `#231942`, componentes `#6E8898` y hover secundario `#9FB1BC`. Los botones normales usan Montserrat `600`, fondo morado y texto del color del fondo general; su hover aclara el morado mezclándolo con el fondo aprobado. Cancelar/cerrar conservan `outline` o `ghost`; eliminar conserva `destructive`.
+`globals.css` concentra los tokens: fondo lavanda `#F3F0F7`, cards y formularios `#FAF8FC`, texto y superficie fuerte `#231942`, componentes `#6E8898` y hover secundario `#9FB1BC`. Los botones normales usan Montserrat `600`, fondo morado y texto del color del fondo general; su hover aclara el morado mezclándolo con el fondo aprobado. Cancelar/cerrar conservan `outline` o `ghost`; eliminar conserva `destructive`. Sólo la card contenedora externa de una landing o formulario usa la sombra `shadow-2xl` de la validación de matrícula; las superficies internas no tienen sombra. Los inputs deshabilitados usan un fondo gris más claro.
 
 Las cards y el header principal no usan contornos grises; la separación se resuelve con color, espacio y sombra. Los bordes internos de campos, separadores y foco se conservan por legibilidad y accesibilidad.
 
 Los inputs y textareas conservan su borde para delimitar claramente los campos y muestran un `ring` visible al recibir foco o al quedar inválidos. La tarjeta de login replica la composición clara del perfil profesional, con avatar de marca, título morado y acceso público a profesionales.
 
-Montserrat `800` se usa en títulos y Raleway `400` en cuerpo. Los íconos funcionales provienen de Huge Icons. Teléfono y correo son controles deshabilitados con texto morado y opacidad completa.
+Montserrat `800` se usa en títulos y Raleway `400` en cuerpo. Los valores numéricos comparables usan `tabular-nums`, compatible con Montserrat, para mantener la alineación de sus dígitos. Los íconos funcionales provienen de Huge Icons. Teléfono y correo son controles deshabilitados con texto morado y opacidad completa.
 
 ## Catálogo de componentes propios
 
@@ -101,15 +101,31 @@ Montserrat `800` se usa en títulos y Raleway `400` en cuerpo. Los íconos funci
 
 - **Ubicación:** `src/app/page.tsx`.
 - **Entorno e interfaz:** Server Component sin props.
-- **Objetivo:** Lee la cookie de acceso, consulta `/auth/me` y, si el usuario tiene rol `Oferente`, consulta `/oferentes/me/matriculas` para determinar si posee matrícula validada activa. En sesión válida delega la campana, el menú lateral, el rol y el estado de matrícula a `Dashboard_controls`, y exhibe la insignia de verificado en la tarjeta de perfil si corresponde.
-- **Estados/dependencias:** Sin sesión, sesión válida o backend inaccesible; `cookies`, `fetch`, `Link`, `Image`, `CheckmarkBadge01Icon` y `Dashboard_controls`. El acceso público al listado permanece disponible sin sesión.
+- **Objetivo:** Lee la cookie de acceso, consulta `/auth/me` y, si el usuario tiene rol `Oferente`, consulta `/oferentes/me/matriculas` para determinar si posee matrícula validada activa. En sesión válida delega la campana, el menú lateral, el rol y el estado de matrícula a `Dashboard_controls`, exhibe la insignia de verificado si corresponde y muestra `Calificar` debajo de su perfil profesional.
+- **Estados/dependencias:** Sin sesión, sesión válida o backend inaccesible; `cookies`, `fetch`, `Link`, `Image`, `CheckmarkBadge01Icon`, `Dashboard_controls` y `Review_request_button`. El acceso público al listado permanece disponible sin sesión.
 - **Personalización:** Sólo presentación; no cambiar transporte o validación de sesión desde componentes visuales.
+
+### `Application_header`
+
+- **Ubicación:** `src/features/navigation/components/application_header.tsx`.
+- **Entorno e interfaz:** Server-compatible Component; recibe opcionalmente `children: ReactNode` para los controles contextuales del encabezado.
+- **Objetivo:** Renderizar el encabezado oficial de OFFIX en todas las páginas con fondo morado, logo claro y espacio para acciones, evitando duplicar su marcado en las rutas.
+- **Estados/dependencias:** Sin estado; `next/image` y el logo local.
+- **Personalización:** Sólo controles hijos contextuales; no modificar colores, logo ni espaciado base por ruta.
+
+### `Back_navigation_link`
+
+- **Ubicación:** `src/features/navigation/components/back_navigation_link.tsx`.
+- **Entorno e interfaz:** Server-compatible Component; recibe `href: string` y `label: string`.
+- **Objetivo:** Reutilizar el botón secundario de retorno con ícono `ArrowLeft01Icon` en formularios y perfiles, manteniendo el mismo tamaño, formato y foco visible.
+- **Estados/dependencias:** Sin estado; `next/link`, `Button` variants y Huge Icons.
+- **Personalización:** Destino y texto visibles; conservar el ícono y el estilo ghost establecidos.
 
 ### `Dashboard_controls`
 
 - **Ubicación:** `src/features/navigation/components/dashboard_controls.tsx`.
 - **Entorno e interfaz:** Client Component; recibe `profile_name: string`, `initial_notifications: Review_notification[]`, `user_role?: string` y `has_validated_license?: boolean`.
-- **Objetivo:** Reemplazar el logout directo del header por la campana y el menú hamburguesa. El menú se abre desde la derecha, muestra el nombre del perfil con una insignia de verificado (`CheckmarkBadge01Icon`) si `has_validated_license` es true, enlaza a `Ver oferentes`, ofrece la opción condicional `Validar matrícula` para oferentes no validados y mantiene `Cerrar sesión` al pie.
+- **Objetivo:** Reemplazar el logout directo del header por la campana y el menú hamburguesa. El menú se abre desde la derecha, muestra el nombre del perfil con una insignia de verificado (`CheckmarkBadge01Icon`) si `has_validated_license` es true, ofrece la opción condicional `Validar matrícula` para oferentes no validados y mantiene `Cerrar sesión` al pie. El acceso público a oferentes queda exclusivamente en login para invitados.
 - **Estados/dependencias:** Ningún panel, notificaciones o menú abierto; `Button`, `Link`, Huge Icons y `Review_notifications_panel`.
 - **Personalización:** Secciones futuras del menú y ancho responsive. El panel móvil no supera el 82 % del viewport.
 - **Accesibilidad:** Botones con nombre, `aria-expanded`, cierre por fondo o tecla Escape y paneles rotulados como diálogo.
@@ -152,26 +168,26 @@ Montserrat `800` se usa en títulos y Raleway `400` en cuerpo. Los íconos funci
 
 - **Ubicación:** `src/app/resena/[code]/page.tsx`.
 - **Entorno e interfaz:** Server Component dinámico; `params: Promise<{ code: string }>`.
-- **Objetivo:** Obtener la solicitud real y seleccionar formulario o estado informativo.
+- **Objetivo:** Obtener la solicitud real y seleccionar formulario o estado informativo, ambos bajo el encabezado compartido. El formulario se contiene en una única card grande.
 - **Estados/dependencias:** Disponible, usada, vencida, inexistente, respuesta inválida o red caída; API de reseñas.
 - **Personalización:** Mensajes de estado; la ruta singular coincide con `url_resena` del backend.
 
 ### `Review_request_button`
 
 - **Ubicación:** `src/features/reviews/components/review_request_button.tsx`.
-- **Entorno e interfaz:** Client Component; recibe `oferente_id: number` y `can_send_whatsapp: boolean` desde el perfil público validado y la sesión servidor.
-- **Objetivo:** Mostrar “Calificar” debajo del perfil y abrir el modal `Datos del cliente`. Valida nombre, correo y el teléfono de 10 dígitos exigido por la API. Sin sesión de Oferente sólo ofrece correo; con esa sesión habilita teléfono y abre el `whatsapp_url` devuelto directamente, sin una vista intermedia de enlace generado.
+- **Entorno e interfaz:** Client Component; recibe `oferente_id: number`, `can_send_whatsapp: boolean` y opcionalmente `trigger_class_name` desde el perfil público validado o el perfil autenticado.
+- **Objetivo:** Mostrar “Calificar” debajo de un perfil y abrir el modal `Datos del cliente`. En el perfil autenticado del Oferente usa su `id_usuario`, que coincide con el perfil profesional. Valida nombre, correo y el teléfono de 10 dígitos exigido por la API. Sin sesión de Oferente sólo ofrece correo; con esa sesión habilita teléfono y abre el `whatsapp_url` devuelto directamente, sin una vista intermedia de enlace generado.
 - **Estados/dependencias:** Cerrado, modal, enviando y error; API de reseñas, componentes UI, Sonner y Huge Icons.
-- **Personalización:** Textos y distribución visual. Las reglas de contacto y el vínculo entre `id_usuario` e `id_oferente` pertenecen al contrato del backend.
+- **Personalización:** Textos, distribución visual y `trigger_class_name` para adaptar el botón a una superficie oscura. Las reglas de contacto y el vínculo entre `id_usuario` e `id_oferente` pertenecen al contrato del backend.
 - **Accesibilidad:** Labels visibles, ayuda y errores propios asociados mediante ARIA, foco inicial en nombre, cierre por cruz, `Cancelar`, Escape o fondo, y acciones bloqueadas durante el envío. El formulario usa `noValidate` para reemplazar los mensajes genéricos del navegador por textos específicos en español.
 
 ### `Review_form`
 
 - **Ubicación:** `src/features/reviews/components/review_form.tsx`.
 - **Entorno e interfaz:** Client Component; recibe `review_request: Review_request`.
-- **Objetivo:** Mostrar datos precargados, editar ratings/comentario y enviar una vez.
+- **Objetivo:** Mostrar datos precargados, editar ratings/comentario y enviar una vez, dentro de una card contenedora grande; sus superficies internas no llevan sombra.
 - **Estados/dependencias:** Editable, enviando, error por toast y enviado; componentes UI, API, Huge Icons y helpers.
-- **Personalización:** Límite de comentario, grillas y textos. El promedio siempre se deriva.
+- **Personalización:** Límite de comentario, grillas y textos. El campo de comentario conserva sólo su contador; el promedio siempre se deriva y usa dígitos tabulares.
 - **Accesibilidad:** Labels visibles, datos de contacto deshabilitados, contador asociado, headings y botón bloqueado durante el request.
 
 ### `Review_rating_field`
@@ -186,7 +202,7 @@ Montserrat `800` se usa en títulos y Raleway `400` en cuerpo. Los íconos funci
 
 - **Ubicación:** `src/features/reviews/components/submitted_review_card.tsx`.
 - **Entorno e interfaz:** Client Component; recibe comentario, ratings, solicitud y respuesta confirmada.
-- **Objetivo:** Confirmar el envío, estado pendiente, profesional, promedio y desglose.
+- **Objetivo:** Confirmar el envío, estado pendiente, profesional, promedio y desglose con números tabulares para mantener alineados los valores.
 - **Estados/dependencias:** Con o sin comentario; Card, Huge Icons y helpers de rating.
 - **Personalización:** `summary_columns` y textos de confirmación.
 
@@ -194,7 +210,7 @@ Montserrat `800` se usa en títulos y Raleway `400` en cuerpo. Los íconos funci
 
 - **Ubicación:** `src/features/reviews/components/review_link_status.tsx`.
 - **Entorno e interfaz:** Server compatible; `message` y `title` opcional.
-- **Objetivo:** Estado accesible y uniforme para enlaces no utilizables.
+- **Objetivo:** Estado accesible y uniforme para enlaces no utilizables, con título y mensaje alineados a la izquierda.
 - **Estados/dependencias:** Mensaje y título variables; Card y Huge Icons.
 - **Personalización:** Texto y ancho de la tarjeta.
 

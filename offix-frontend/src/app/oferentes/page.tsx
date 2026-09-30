@@ -1,7 +1,7 @@
 import { ArrowRight01Icon, Home01Icon, StarIcon, UserGroupIcon } from "hugeicons-react"
-import Image from "next/image"
 import Link from "next/link"
 
+import { Application_header } from "@/features/navigation/components/application_header"
 import {
   get_professional_categories,
   get_professionals,
@@ -23,19 +23,7 @@ export default async function Professionals_page() {
 
   return (
     <div className="flex min-h-screen flex-col bg-background">
-      <header className="flex w-full items-center justify-between gap-4 bg-foreground px-5 py-4 sm:px-6">
-        <div className="flex items-center gap-3">
-          <Image
-            alt="OFFIX"
-            className="h-8 w-auto"
-            height={32}
-            priority
-            src="/logos/logo-simple-blanco.png"
-            width={32}
-          />
-          <span className="font-heading text-xl font-extrabold tracking-wide text-background">OFFIX</span>
-        </div>
-
+      <Application_header>
         <Link
           className="inline-flex h-10 items-center justify-center gap-2 rounded-xl border border-background/40 px-4 font-heading text-sm font-semibold text-background transition-colors hover:bg-background/15 focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-background/40"
           href="/"
@@ -43,7 +31,7 @@ export default async function Professionals_page() {
           <Home01Icon aria-hidden="true" className="size-4" />
           Inicio
         </Link>
-      </header>
+      </Application_header>
 
       <main className="flex-1 px-5 py-10">
         <div className="mx-auto max-w-5xl">
@@ -58,19 +46,19 @@ export default async function Professionals_page() {
           </div>
 
           {!professionals_result.ok ? (
-            <section className="rounded-2xl bg-card p-6 shadow-lg">
+            <section className="rounded-2xl bg-card p-6 shadow-2xl">
               <h2 className="font-heading text-xl font-extrabold">No pudimos mostrar los perfiles</h2>
               <p className="mt-2">{professionals_result.message} Intentá nuevamente más tarde.</p>
             </section>
           ) : professionals_result.data.length === 0 ? (
-            <section className="rounded-2xl bg-card p-6 shadow-lg">
+            <section className="rounded-2xl bg-card p-6 shadow-2xl">
               <h2 className="font-heading text-xl font-extrabold">Todavía no hay profesionales</h2>
             </section>
           ) : (
             <section className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
               {professionals_result.data.map((professional) => (
                 <article
-                  className="flex flex-col rounded-2xl bg-card p-6 shadow-lg"
+                  className="flex flex-col rounded-2xl bg-card p-6 shadow-2xl"
                   key={professional.id_oferente}
                 >
                   <div className="mb-4 flex size-14 items-center justify-center rounded-full bg-foreground font-heading text-xl font-extrabold text-background">

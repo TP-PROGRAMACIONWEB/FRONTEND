@@ -1,19 +1,18 @@
 "use client"
 
 import {
-  ArrowLeft01Icon,
   Certificate01Icon,
   CheckmarkBadge01Icon,
   Loading03Icon,
 } from "hugeicons-react"
-import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { useState } from "react"
 import { show_error_toast, show_info_toast, show_success_toast } from "@/components/ui/sonner"
 
-import { Button, buttonVariants } from "@/components/ui/button"
+import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
+import { Back_navigation_link } from "@/features/navigation/components/back_navigation_link"
 
 type Profession_type = "Aire acondicionado" | "Gasista"
 
@@ -43,7 +42,7 @@ export function License_validation_form() {
 
   const expected_digits = DIGITS_BY_PROFESSION[tipo_profesional]
   const clean_number = numero_matricula.trim()
-  const can_submit = clean_number.length > 0 && !is_submitting
+  const can_submit = clean_number.length === expected_digits && !is_submitting
 
   const handle_profession_change = (new_profession: Profession_type) => {
     set_tipo_profesional(new_profession)
@@ -207,16 +206,7 @@ export function License_validation_form() {
           )}
         </Button>
 
-        <Link
-          className={buttonVariants({
-            variant: "ghost",
-            className: "h-11 w-full text-foreground/70 hover:text-foreground",
-          })}
-          href="/"
-        >
-          <ArrowLeft01Icon className="size-4" data-icon="inline-start" />
-          Volver al inicio
-        </Link>
+        <Back_navigation_link href="/" label="Volver al inicio" />
       </div>
     </form>
   )

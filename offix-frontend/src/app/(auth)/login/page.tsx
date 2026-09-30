@@ -1,15 +1,18 @@
 import { Suspense } from "react";
 import Image from "next/image";
 import Link from "next/link";
+import { Application_header } from "@/features/navigation/components/application_header";
 import { LoginForm } from "./login_form";
 import { ErrorHandler } from "./error_handler";
 
 export default function LoginPage() {
   return (
-    <div className="relative flex min-h-screen flex-col items-center justify-center overflow-hidden bg-background font-sans">
-      <Suspense fallback={null}>
-        <ErrorHandler />
-      </Suspense>
+    <div className="flex min-h-screen flex-col overflow-hidden bg-background font-sans">
+      <Application_header />
+      <main className="relative flex flex-1 flex-col items-center justify-center">
+        <Suspense fallback={null}>
+          <ErrorHandler />
+        </Suspense>
 
       {/* Pill Badge at the top center */}
       <div className="absolute top-8 left-1/2 -translate-x-1/2">
@@ -52,6 +55,7 @@ export default function LoginPage() {
           </Link>
         </div>
       </div>
+      </main>
     </div>
   );
 }

@@ -1,6 +1,5 @@
 import {
   Alert02Icon,
-  ArrowLeft01Icon,
   Call02Icon,
   Certificate01Icon,
   Clock01Icon,
@@ -8,12 +7,12 @@ import {
   Shield01Icon,
   StarIcon,
 } from "hugeicons-react"
-import Link from "next/link"
-
 import {
   get_professional,
   get_professional_categories,
 } from "@/features/professionals/api/professionals"
+import { Back_navigation_link } from "@/features/navigation/components/back_navigation_link"
+import { Application_header } from "@/features/navigation/components/application_header"
 import { Review_request_button } from "@/features/reviews/components/review_request_button"
 import { get_current_user } from "@/lib/session"
 
@@ -50,15 +49,10 @@ export default async function Professional_page({ params }: Professional_page_pr
     : null
 
   return (
-    <main className="min-h-screen bg-background px-5 py-10">
-      <article className="mx-auto max-w-2xl rounded-3xl bg-card p-6 shadow-2xl sm:p-8">
-        <Link
-          className="mb-8 inline-flex h-9 items-center justify-center gap-1.5 rounded-lg bg-foreground px-3 font-heading text-xs font-semibold text-background transition-colors hover:bg-[color-mix(in_oklch,var(--foreground),var(--background)_15%)] focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
-          href="/oferentes"
-        >
-          <ArrowLeft01Icon aria-hidden="true" className="size-3.5" />
-          Volver a profesionales
-        </Link>
+    <div className="flex min-h-screen flex-col bg-background">
+      <Application_header />
+      <main className="flex-1 px-5 py-10">
+        <article className="mx-auto max-w-2xl rounded-3xl bg-card p-6 shadow-2xl sm:p-8">
 
         <header className="border-b border-border pb-6">
           <div className="mb-4 flex size-20 items-center justify-center rounded-full bg-foreground font-heading text-2xl font-extrabold text-background">
@@ -113,8 +107,12 @@ export default async function Professional_page({ params }: Professional_page_pr
           can_send_whatsapp={current_user?.rol === "Oferente"}
           oferente_id={professional.id_oferente}
         />
-      </article>
-    </main>
+        <div className="mt-3">
+          <Back_navigation_link href="/oferentes" label="Volver a profesionales" />
+        </div>
+        </article>
+      </main>
+    </div>
   )
 }
 
@@ -140,18 +138,17 @@ function Profile_detail({
 
 function Profile_error({ message }: { message: string }) {
   return (
-    <main className="grid min-h-screen place-items-center bg-background p-5">
-      <section className="w-full max-w-md rounded-2xl bg-card p-6 text-center shadow-xl">
+    <div className="flex min-h-screen flex-col bg-background">
+      <Application_header />
+      <main className="grid flex-1 place-items-center p-5">
+      <section className="w-full max-w-md rounded-2xl bg-card p-6 text-center shadow-2xl">
         <h1 className="font-heading text-2xl font-extrabold">No pudimos mostrar el perfil</h1>
         <p className="mt-3">{message}</p>
-        <Link
-          className="mt-5 inline-flex h-9 items-center justify-center gap-1.5 rounded-lg bg-foreground px-3 font-heading text-xs font-semibold text-background transition-colors hover:bg-[color-mix(in_oklch,var(--foreground),var(--background)_15%)] focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
-          href="/oferentes"
-        >
-          <ArrowLeft01Icon aria-hidden="true" className="size-3.5" />
-          Volver a profesionales
-        </Link>
+        <div className="mt-5">
+          <Back_navigation_link href="/oferentes" label="Volver a profesionales" />
+        </div>
       </section>
-    </main>
+      </main>
+    </div>
   )
 }

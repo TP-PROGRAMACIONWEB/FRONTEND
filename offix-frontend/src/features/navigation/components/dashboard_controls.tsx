@@ -6,7 +6,6 @@ import {
   CheckmarkBadge01Icon,
   Logout01Icon,
   Menu01Icon,
-  Search01Icon,
   UserCircleIcon,
 } from "hugeicons-react"
 import Link from "next/link"
@@ -117,18 +116,6 @@ export function Dashboard_controls({
             <p className="px-3 font-heading text-xs font-semibold tracking-widest text-muted-foreground uppercase">
               Navegación
             </p>
-            <Link
-              className="mt-3 flex items-center gap-3 rounded-xl bg-background px-4 py-3 transition-colors hover:bg-muted focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
-              href="/oferentes"
-              onClick={close_panels}
-            >
-              <Search01Icon className="size-5 shrink-0" aria-hidden="true" />
-              <span>
-                <span className="block font-heading font-semibold">Ver oferentes</span>
-                <span className="block text-xs text-muted-foreground">(test)</span>
-              </span>
-            </Link>
-
             {user_role === "Oferente" && !has_validated_license && (
               <Link
                 className="mt-2 flex items-center gap-3 rounded-xl bg-background px-4 py-3 transition-colors hover:bg-muted focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50"

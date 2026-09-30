@@ -85,16 +85,17 @@ export function Review_form({ review_request }: Review_form_props) {
   }
 
   return (
-    <main className="mx-auto min-h-screen w-full max-w-6xl px-5 py-10 sm:px-8">
-      <div className="mb-8">
-        <h1 className="font-heading text-2xl font-extrabold sm:text-3xl">
-          Formulario de Reseña del Servicio
-        </h1>
-        <p className="mt-2 text-muted-foreground">
-          Valorá la atención y el trabajo de {review_request.nombre_oferente}.
-        </p>
-      </div>
-
+    <main className="flex flex-1 items-center justify-center px-5 py-10 sm:px-8">
+      <Card className="w-full max-w-6xl rounded-3xl shadow-2xl">
+        <CardHeader className="border-b pb-5">
+          <CardTitle className="font-heading text-2xl font-extrabold sm:text-3xl">
+            Formulario de Reseña del Servicio
+          </CardTitle>
+          <p className="mt-2 text-muted-foreground">
+            Valorá la atención y el trabajo de {review_request.nombre_oferente}.
+          </p>
+        </CardHeader>
+        <CardContent>
       <form className="space-y-8" onSubmit={handle_submit}>
         <Card>
           <CardHeader>
@@ -145,7 +146,7 @@ export function Review_form({ review_request }: Review_form_props) {
                 Usá las estrellas para asignar valores de medio punto.
               </p>
             </div>
-            <output className="w-fit rounded-lg border bg-card px-4 py-2 font-heading text-sm font-semibold">
+            <output className="w-fit rounded-lg border bg-card px-4 py-2 font-heading text-sm font-semibold tabular-nums">
               Promedio general: {average.toFixed(1)} / 5
             </output>
           </div>
@@ -172,7 +173,7 @@ export function Review_form({ review_request }: Review_form_props) {
               Descripción del trabajo
             </Label>
             <Textarea
-              aria-describedby="description-help description-counter"
+              aria-describedby="description-counter"
               className="mt-3 min-h-32 resize-y"
               id="work-description"
               maxLength={description_limit}
@@ -180,8 +181,7 @@ export function Review_form({ review_request }: Review_form_props) {
               placeholder="Ingresá una descripción o comentario sobre el trabajo…"
               value={description}
             />
-            <div className="mt-2 flex justify-between gap-4 text-sm text-muted-foreground">
-              <p id="description-help">Campo opcional. Máximo 200 caracteres.</p>
+            <div className="mt-2 flex justify-end text-sm text-muted-foreground">
               <p aria-live="polite" id="description-counter">
                 {description.length} / {description_limit}
               </p>
@@ -200,6 +200,8 @@ export function Review_form({ review_request }: Review_form_props) {
           </Button>
         </div>
       </form>
+        </CardContent>
+      </Card>
     </main>
   )
 }

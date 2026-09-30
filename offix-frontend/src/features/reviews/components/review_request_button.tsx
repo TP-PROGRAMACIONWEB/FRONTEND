@@ -17,6 +17,7 @@ import { create_review_invitation } from "@/features/reviews/api/reviews"
 type Review_request_button_props = {
   can_send_whatsapp: boolean
   oferente_id: number
+  trigger_class_name?: string
 }
 
 type Field_name = "name" | "phone" | "email"
@@ -36,6 +37,7 @@ function is_valid_email(email: string): boolean {
 export function Review_request_button({
   can_send_whatsapp,
   oferente_id,
+  trigger_class_name,
 }: Review_request_button_props) {
   const [email, set_email] = useState("")
   const [field_errors, set_field_errors] = useState<Field_errors>({})
@@ -160,7 +162,11 @@ export function Review_request_button({
 
   return (
     <section className="mt-6 w-full border-t border-border pt-5">
-      <Button className="h-11 w-full px-6" onClick={open_modal} type="button">
+      <Button
+        className={`h-11 w-full px-6 ${trigger_class_name ?? ""}`}
+        onClick={open_modal}
+        type="button"
+      >
         <StarIcon className="size-4" />
         Calificar
       </Button>

@@ -33,8 +33,8 @@ export function Submitted_review_card({
   const average = get_average_rating(ratings)
 
   return (
-    <main className="grid min-h-screen place-items-center px-5 py-10 sm:px-8">
-      <Card className="w-full max-w-3xl shadow-lg">
+    <main className="grid flex-1 place-items-center px-5 py-10 sm:px-8">
+      <Card className="w-full max-w-3xl rounded-3xl shadow-2xl">
         <CardHeader className="border-b pb-4">
           <div className="mb-2 flex items-center gap-3">
             <CheckmarkCircle02Icon className="size-7 text-foreground" />
@@ -53,7 +53,7 @@ export function Submitted_review_card({
             <p className="font-heading font-semibold">{review_request.nombre_oferente}</p>
           </div>
 
-          <h2 className="font-heading text-lg font-extrabold">
+          <h2 className="font-heading text-lg font-extrabold tabular-nums">
             Promedio general: {average.toFixed(1)} / 5
           </h2>
 
@@ -68,7 +68,7 @@ export function Submitted_review_card({
                   return (
                     <div className="rounded-lg border p-3" key={key}>
                       <dt className="font-heading font-semibold">{category.label}</dt>
-                      <dd className="mt-1">
+                      <dd className="mt-1 tabular-nums">
                         {rating.toFixed(1)} / 5 · {get_rating_label(rating)}
                       </dd>
                     </div>
